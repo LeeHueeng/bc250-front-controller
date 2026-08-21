@@ -361,7 +361,7 @@ light:
     pin: GPIO48
     chipset: WS2812
     num_leds: 1
-    channel_colors: GRB
+    rgb_order: GRB
 
 # ─── 폰트 (240×320 화면에 맞춘 크기) ─────────
 font:
