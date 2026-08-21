@@ -61,6 +61,7 @@ BC-250은 PCIe 8핀만 쓰기 때문에 ATX 24핀 커넥터가 통째로 놀고 
 | **최소** | ESP32 + 릴레이 + 점퍼선 3가닥 | 웹/HA 전원 ON·OFF, 정상 종료, 상태 LED(내장) | [`bc250-front-minimal.yaml`](bc250-front-minimal.yaml) |
 | **+버튼** | + 택트 스위치 | 실물 전원 버튼 | 동일 |
 | **풀옵션** | + OLED, DS18B20×2, PWM 팬, 메뉴 버튼 2개, PWR_OK 분압 | 팬 커브, 온도, 화면, 본체 설정 메뉴, PSU 상태 감지 | [`bc250-front.yaml`](bc250-front.yaml) |
+| **풀옵션 + 컬러 LCD** | 위 풀옵션에서 OLED → **ST7789V 2.4인치 240×320 SPI** | 위 기능 전부 + 컬러 대형 화면·상태 아이콘·백라이트 밝기 조절 | [`bc250-front-st7789.yaml`](bc250-front-st7789.yaml) |
 
 ## 배선
 
@@ -69,7 +70,7 @@ BC-250은 PCIe 8핀만 쓰기 때문에 ATX 24핀 커넥터가 통째로 놀고 
 ![ATX 24핀 구멍 지도](docs/images/atx-pinmap.png)
 
 납땜 불필요 — 수(male) 점퍼핀이 노는 ATX 24핀 구멍에 그대로 꽂힙니다.
-상세 배선 설명서: [`docs/wiring-guide.html`](docs/wiring-guide.html)
+상세 배선 설명서: [`docs/wiring-guide.html`](docs/wiring-guide.html) (OLED) · [`docs/wiring-guide-st7789.html`](docs/wiring-guide-st7789.html) (ST7789V)
 
 ## 굽기
 

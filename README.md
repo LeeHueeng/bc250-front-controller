@@ -66,6 +66,7 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 | **Minimal** | ESP32 + relay + 3 jumper wires | Web/HA power on-off, graceful shutdown, status LED (onboard) | [`bc250-front-minimal.yaml`](bc250-front-minimal.yaml) |
 | **+ Button** | + push button | Physical front-panel power button | same |
 | **Full** | + OLED, 2× DS18B20, PWM fan, 2 menu buttons, PWR_OK divider | Fan curve, temperatures, display, on-device settings menu, PSU state | [`bc250-front.yaml`](bc250-front.yaml) |
+| **Full + color LCD** | Full, but OLED → **ST7789V 2.4" 240×320 SPI** | All of the above + large color UI, status icons, backlight dimming | [`bc250-front-st7789.yaml`](bc250-front-st7789.yaml) |
 
 ## Hardware
 
@@ -104,7 +105,7 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 
 Relay contacts: **COM ↔ ATX pin 16 (green `PS_ON`)**, **NC ↔ GND**, NO unused.
 
-Full interactive wiring guide (Korean): [`docs/wiring-guide.html`](docs/wiring-guide.html)
+Full interactive wiring guide (Korean): [`docs/wiring-guide.html`](docs/wiring-guide.html) (OLED) · [`docs/wiring-guide-st7789.html`](docs/wiring-guide-st7789.html) (ST7789V)
 
 ## Flashing
 
