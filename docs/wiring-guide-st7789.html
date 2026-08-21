@@ -52,10 +52,23 @@
 ③ PWR_OK(회색)는 5V라서 <b>10kΩ 분압 없이 GPIO에 직결 금지</b>
 </div>
 
-<div class="warn" style="background:#eef7ff;border-color:#9cc3e8">
-<b>📺 ST7789V 배선 요약 (SPI 4선)</b><br>
-<span class="mono">GPIO8 MOSI · GPIO9 SCLK · GPIO17 CS · GPIO15 DC · GPIO16 RST · GPIO18 BL(백라이트 PWM)</span> · VCC=3.3V · GND=공통<br>
-화면이 세로로 80px 밀려 보이면 yaml의 <span class="mono">offset_height: 0</span> → <span class="mono">80</span> 으로 변경.
+<h2>0. ST7789V 모듈 핀 → ESP32 연결표 (모듈에 인쇄된 라벨 기준)</h2>
+<div class="card">
+<table>
+<tr><th>ST7789V 모듈 핀</th><th>ESP32-S3 핀</th><th>역할</th></tr>
+<tr><td class="mono"><b>VCC</b></td><td class="mono">3V3</td><td>전원 (3.3V)</td></tr>
+<tr><td class="mono"><b>GND</b></td><td class="mono">GND</td><td>그라운드 (공통)</td></tr>
+<tr><td class="mono"><b>SDA</b> (DIN)</td><td class="mono">GPIO8</td><td>SPI 데이터 입력 (MOSI)</td></tr>
+<tr><td class="mono"><b>SCL</b> (SCLK)</td><td class="mono">GPIO9</td><td>SPI 클럭</td></tr>
+<tr><td class="mono"><b>CS</b></td><td class="mono">GPIO17</td><td>칩 선택</td></tr>
+<tr><td class="mono"><b>DC</b> (A0/RS)</td><td class="mono">GPIO15</td><td>데이터/커맨드 구분</td></tr>
+<tr><td class="mono"><b>RST</b> (RESET)</td><td class="mono">GPIO16</td><td>리셋</td></tr>
+<tr><td class="mono"><b>BL</b></td><td class="mono">GPIO18</td><td>백라이트 (PWM 밝기 제어)</td></tr>
+</table>
+<div class="legend">
+  ⚠️ 저가 모듈은 SPI 핀을 <b>SDA/SCL</b>로 인쇄해 놓은 경우가 많음 — <b>SDA=MOSI, SCL=SCLK</b>로 보면 됨.<br>
+  화면이 세로로 80px 밀려 보이면 yaml의 <span class="mono">offset_height: 0</span> → <span class="mono">80</span> 으로 변경.
+</div>
 </div>
 
 <h2>1. ESP32-S3 실물 핀 배치 (USB가 위로 가게 놓고 볼 것)</h2>

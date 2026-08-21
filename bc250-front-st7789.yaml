@@ -18,16 +18,16 @@
 #  GPIO7  DS18B20 원와이어      GPIO13 메뉴 버튼B(선택)
 #  GPIO48 WS2812 상태 LED
 #
-# ── ST7789V 240×320 배선 (SPI 4선) ────────────────────────────────────────────────
-#  ESP32       →  ST7789V 모듈
-#  GPIO8       →  SDA/MOSI (DIN)
-#  GPIO9       →  SCL/SCLK
-#  GPIO17      →  CS
-#  GPIO15      →  DC (A0/RS)
-#  GPIO16      →  RST (RESET)
-#  GPIO18      →  BL (백라이트, PWM)
-#  3V3         →  VCC
-#  GND         →  GND
+# ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
+#  모듈 핀      →  ESP32-S3      비고
+#  VCC          →  3V3
+#  GND          →  GND
+#  SDA (DIN)    →  GPIO8         SPI MOSI (데이터 입력)
+#  SCL (SCLK)   →  GPIO9         SPI 클럭
+#  CS           →  GPIO17
+#  DC (A0/RS)   →  GPIO15
+#  RST (RESET)  →  GPIO16
+#  BL           →  GPIO18         백라이트 PWM 밝기
 #
 #  ※ 일부 호환 모듈은 240×320 다이(원판)를 240×240으로 잘라 파는 경우가 있음.
 #     화면이 세로로 80px 밀려 보이면 offset_height: 80 으로 바꿀 것.
