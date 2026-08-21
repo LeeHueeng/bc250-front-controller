@@ -13,7 +13,7 @@
 
 ## Why?
 
-The AMD BC-250 is an amazing $60 PS5-APU board — but it was born in a mining rack, so as a desktop it's missing everything:
+The AMD BC-250 is a PS5-APU board that sells for roughly $100–150 these days — but it was born in a mining rack, so as a desktop it's missing everything:
 
 - ❌ **No power button** and no ACPI — power on = PSU on
 - ❌ **No graceful shutdown** — cutting power is the only "off"
@@ -55,6 +55,16 @@ button / web / HA  →  ESP32  →  HTTP shutdown request to the OS
                               →  wait 60 s for the OS to halt
                               →  release PS_ON (power off)
 ```
+
+## Build tiers — everything is optional except the relay
+
+Missing parts don't break anything: an absent OLED, sensor, fan or button simply disables that one feature. Start minimal, add parts whenever you feel like it.
+
+| Tier | Hardware | You get | Firmware |
+|---|---|---|---|
+| **Minimal** | ESP32 + relay + 3 jumper wires | Web/HA power on-off, graceful shutdown, status LED (onboard) | [`bc250-front-minimal.yaml`](bc250-front-minimal.yaml) |
+| **+ Button** | + push button | Physical front-panel power button | same |
+| **Full** | + OLED, 2× DS18B20, PWM fan, PWR_OK divider | Fan curve, temperatures, display, PSU state | [`bc250-front.yaml`](bc250-front.yaml) |
 
 ## Hardware
 

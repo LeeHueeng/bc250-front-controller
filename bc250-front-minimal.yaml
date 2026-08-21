@@ -1,0 +1,122 @@
+# BC250 Front Controller — MINIMAL build
+# 필요한 것: ESP32-S3 + 5V 릴레이 모듈 + 점퍼선 3가닥 (ATX 5VSB·PS_ON·GND). 그게 전부.
+# 제공: 원격/웹 전원 ON·OFF, 정상 종료 시퀀스, (달면) 전원 버튼, 상태 LED(내장)
+# OLED·온도센서·팬 제어가 필요하면 bc250-front.yaml 사용.
+
+substitutions:
+  bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"  # BC-250 OS의 종료 에이전트 주소로 교체
+
+esphome:
+  name: bc250-front
+  friendly_name: BC250 컨트롤러
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  hardware_uart: UART0   # CH343 계열 보드 필수
+api:
+  reboot_timeout: 0s
+ota:
+  platform: esphome
+web_server:
+  version: 3
+
+wifi:
+  reboot_timeout: 0s
+  ap:
+    ssid: "bc250-front-setup"
+captive_portal:
+improv_serial:
+
+globals:
+  - id: shutting_down
+    type: bool
+    initial_value: "false"
+
+http_request:
+  timeout: 5s
+  verify_ssl: false
+
+script:
+  - id: graceful_shutdown
+    mode: single
+    then:
+      - globals.set: {id: shutting_down, value: "true"}
+      - http_request.post:
+          url: ${bc250_shutdown_url}
+      - delay: 60s
+      - switch.turn_off: server_power
+      - globals.set: {id: shutting_down, value: "false"}
+
+button:
+  - platform: template
+    name: "정상 종료"
+    icon: mdi:power-cycle
+    on_press: [script.execute: graceful_shutdown]
+  - platform: restart
+    name: "컨트롤러 재시작"
+
+switch:
+  - platform: gpio
+    id: relay
+    pin: GPIO4
+    inverted: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    id: server_power
+    name: "서버 전원"
+    icon: mdi:server
+    lambda: 'return !id(relay).state;'
+    turn_on_action:  [switch.turn_off: relay]
+    turn_off_action: [switch.turn_on: relay]
+
+binary_sensor:
+  - platform: gpio
+    id: power_button          # 버튼 미장착이어도 무해 (내부 풀업)
+    pin: {number: GPIO6, mode: {input: true, pullup: true}, inverted: true}
+    on_multi_click:
+      - timing: [ON for at most 1s]
+        then:
+          - if:
+              condition: {switch.is_off: server_power}
+              then: [switch.turn_on: server_power]
+              else: [script.execute: graceful_shutdown]
+      - timing: [ON for at least 5s]
+        then: [switch.turn_off: server_power]
+
+sensor:
+  - platform: uptime
+    name: "컨트롤러 업타임"
+  - platform: wifi_signal
+    name: "WiFi 신호"
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP 주소"
+
+# 상태 LED (대부분 devkit 내장 — 추가 부품 0원)
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "상태 LED"
+    pin: GPIO48
+    chipset: WS2812
+    num_leds: 1
+    rgb_order: GRB
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          auto call = id(status_led).turn_on();
+          if (!id(server_power).state) { id(status_led).turn_off().perform(); return; }
+          if (id(shutting_down)) call.set_rgb(1.0, 0.7, 0.0);
+          else call.set_rgb(0.0, 1.0, 0.0);
+          call.set_brightness(0.4);
+          call.perform();
