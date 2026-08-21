@@ -74,8 +74,8 @@
   <div class="lb l u">OLED SCL →</div><div class="pin u" style="background:#8556d6">9</div><div class="body"></div><div class="pin">45</div><div class="lb r"><span class="no">⛔ 스트래핑 — 비워둘 것</span></div>
   <div class="lb l u">팬 PWM (4핀-④) →</div><div class="pin u" style="background:#1d6fb8">10</div><div class="body"></div><div class="pin u" style="background:#c23fa4">48</div><div class="lb r u">WS2812 LED (보드 내장 — 외장이면 여기)</div>
   <div class="lb l u">팬 TACH (4핀-③) →</div><div class="pin u" style="background:#5f8f0b">11</div><div class="body"></div><div class="pin">47</div><div class="lb r">빈 핀</div>
-  <div class="lb l">빈 핀</div><div class="pin">12</div><div class="body"></div><div class="pin">21</div><div class="lb r">빈 핀</div>
-  <div class="lb l">빈 핀</div><div class="pin">13</div><div class="body"></div><div class="pin">20</div><div class="lb r">빈 핀 (USB D+)</div>
+  <div class="lb l u">메뉴 버튼A 이동 (반대쪽 GND) →</div><div class="pin u" style="background:#0e7490">12</div><div class="body"></div><div class="pin">21</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">메뉴 버튼B 선택 (반대쪽 GND) →</div><div class="pin u" style="background:#0e7490">13</div><div class="body"></div><div class="pin">20</div><div class="lb r">빈 핀 (USB D+)</div>
   <div class="lb l">빈 핀</div><div class="pin">14</div><div class="body"></div><div class="pin">19</div><div class="lb r">빈 핀 (USB D−)</div>
   <div class="lb l u">ATX 9번 보라 5VSB →</div><div class="pin u" style="background:#7b3ff2">5V</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
   <div class="lb l u">ATX 검정 (공통 그라운드) →</div><div class="pin u" style="background:#222">GND</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
@@ -187,6 +187,7 @@
 <tr><td class="mono">GPIO8 / GPIO9</td><td>OLED SDA / SCL</td><td>OLED 전원은 3.3V</td></tr>
 <tr><td class="mono">GPIO10</td><td>팬 4핀-④ PWM</td><td>25kHz PWM 출력</td></tr>
 <tr><td class="mono">GPIO11</td><td>팬 4핀-③ TACH</td><td>내부 풀업, 2펄스/회전</td></tr>
+<tr><td class="mono">GPIO12 / GPIO13</td><td>메뉴 버튼 A(이동) / B(선택)</td><td>반대쪽은 GND, 내부 풀업 — OLED 설정 메뉴 조작</td></tr>
 <tr><td class="mono">GPIO48</td><td>WS2812 상태 LED</td><td>devkit 내장 LED면 배선 불필요</td></tr>
 <tr><td colspan="3" style="background:#fbfcfe">릴레이 접점: <b>COM ↔ ATX 16번 녹색(PS_ON)</b> · <b>NC ↔ GND</b> · NO는 비움 / 릴레이 VCC↔5VSB, GND↔공통</td></tr>
 <tr><td colspan="3" style="background:#fbfcfe">팬 전원: ① GND ↔ 공통 GND · ② 12V ↔ ATX 10번 노랑 (파워 켜져 있을 때만 살아남 — 정상)</td></tr>

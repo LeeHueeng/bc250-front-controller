@@ -29,6 +29,7 @@ This project fixes all of that with an ESP32-S3 sitting between your ATX PSU and
 - 🧠 **Fully autonomous** — the graceful-shutdown sequence (HTTP request to the OS → wait → cut power), fan curve, OLED and button all run on the ESP32 itself. No Home Assistant, no cloud, no Wi-Fi required
 - 🌡️ **Temperature-driven fan curve** — two DS18B20 probes (GPU heatsink + case), 25 kHz PWM, tach feedback with fan-failure detection
 - 🖥️ **OLED status display** — power state, temperatures, fan RPM, network info on an SSD1306
+- 🎛️ **On-device settings menu** — two extra buttons + the OLED give you a local menu: fan mode/preset, manual speed, display brightness, overheat threshold, shutdown timeout — all saved to flash, no phone or PC needed
 - 🚨 **WS2812 status LED** — off / green (running) / yellow (shutting down) / red (fan failure, overheat)
 - 🌐 **Built-in web dashboard** — control everything from a browser, straight from the ESP32
 - 🏠 **Home Assistant auto-discovery** — appears natively via the ESPHome integration (optional MQTT)
@@ -64,7 +65,7 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 |---|---|---|---|
 | **Minimal** | ESP32 + relay + 3 jumper wires | Web/HA power on-off, graceful shutdown, status LED (onboard) | [`bc250-front-minimal.yaml`](bc250-front-minimal.yaml) |
 | **+ Button** | + push button | Physical front-panel power button | same |
-| **Full** | + OLED, 2× DS18B20, PWM fan, PWR_OK divider | Fan curve, temperatures, display, PSU state | [`bc250-front.yaml`](bc250-front.yaml) |
+| **Full** | + OLED, 2× DS18B20, PWM fan, 2 menu buttons, PWR_OK divider | Fan curve, temperatures, display, on-device settings menu, PSU state | [`bc250-front.yaml`](bc250-front.yaml) |
 
 ## Hardware
 
@@ -74,7 +75,7 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 | 5 V 1-channel relay module (optocoupler) | 1 | $1 |
 | SSD1306 0.96" OLED (I2C) | 1 | $2 |
 | DS18B20 temperature sensor | 2 | $2 |
-| Momentary push button | 1 | $0.5 |
+| Momentary push button (power + 2 menu) | 3 | $1 |
 | Resistors: 2× 10 kΩ, 1× 4.7 kΩ | — | $0.1 |
 | Dupont jumper wires | — | $1 |
 
@@ -98,6 +99,7 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 | `GPIO8` / `GPIO9` | OLED SDA / SCL |
 | `GPIO10` | Fan PWM (4-pin fan, pin 4) |
 | `GPIO11` | Fan tach (4-pin fan, pin 3) |
+| `GPIO12` / `GPIO13` | Menu buttons A (navigate) / B (select) — other leg → GND |
 | `GPIO48` | WS2812 (onboard on most devkits) |
 
 Relay contacts: **COM ↔ ATX pin 16 (green `PS_ON`)**, **NC ↔ GND**, NO unused.
