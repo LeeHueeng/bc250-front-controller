@@ -1,0 +1,511 @@
+# BC250 Front Controller — ST7789V 240×320 SPI 디스플레이 에디션 (풀옵션)
+#
+# bc250-front.yaml 의 OLED(SSD1306 I2C)를 ST7789V 2.4인치 240×320 컬러 SPI 디스플레이로
+# 교체한 버전. 기존 기능(릴레이 전원 제어·정상 종료·팬 커브·DS18B20·버튼·HA·웹·OTA)은 그대로.
+#
+# ── 핀맵 (ESP32-S3, 기존 대비 변경분) ─────────────────────────────────────────────
+#  GPIO8  SPI MOSI (기존 I2C SDA → SPI로 전환)
+#  GPIO9  SPI SCLK (기존 I2C SCL → SPI로 전환)
+#  GPIO17 SPI CS
+#  GPIO15 SPI DC (data/command)
+#  GPIO16 SPI RST
+#  GPIO18 BL 백라이트 (PWM 밝기 제어, ledc)
+#
+# ── 핀맵 (기존 그대로) ─────────────────────────────────────────────────────────────
+#  GPIO4  릴레이 IN            GPIO10 팬 PWM 출력 (25kHz)
+#  GPIO5  PWR_OK 감지(분압)     GPIO11 팬 타코 입력
+#  GPIO6  전원 버튼(GND로)      GPIO12 메뉴 버튼A(이동)
+#  GPIO7  DS18B20 원와이어      GPIO13 메뉴 버튼B(선택)
+#  GPIO48 WS2812 상태 LED
+#
+# ── ST7789V 240×320 배선 (SPI 4선) ────────────────────────────────────────────────
+#  ESP32       →  ST7789V 모듈
+#  GPIO8       →  SDA/MOSI (DIN)
+#  GPIO9       →  SCL/SCLK
+#  GPIO17      →  CS
+#  GPIO15      →  DC (A0/RS)
+#  GPIO16      →  RST (RESET)
+#  GPIO18      →  BL (백라이트, PWM)
+#  3V3         →  VCC
+#  GND         →  GND
+#
+#  ※ 일부 호환 모듈은 240×320 다이(원판)를 240×240으로 잘라 파는 경우가 있음.
+#     화면이 세로로 80px 밀려 보이면 offset_height: 80 으로 바꿀 것.
+
+substitutions:
+  # BC-250 OS 세팅 후 실제 IP·포트로 교체 (BC-250 쪽 shutdown 에이전트는 OS 설치 때 만듦)
+  bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"
+
+esphome:
+  name: bc250-front
+  friendly_name: BC250 컨트롤러
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  hardware_uart: UART0   # CH343 계열 보드 필수 (USB-JTAG 아님)
+api:            # HA 직결 (자동 발견·이벤트·서비스)
+  reboot_timeout: 0s
+ota:
+  platform: esphome
+web_server:
+  version: 3
+
+# MQTT가 필요하면 주석 해제
+# mqtt:
+#   broker: !secret mqtt_broker
+
+wifi:
+  reboot_timeout: 0s   # WiFi 끊겨도 재부팅 금지 — 로컬 제어는 계속 동작
+  ap:
+    ssid: "bc250-front-setup"
+captive_portal:
+improv_serial:
+
+# ─── SPI 버스 (ST7789V 디스플레이) ─────────────────────────
+# ST7789V는 쓰기 전용(MOSI만)이라 miso 불필요.
+spi:
+  clk_pin: GPIO9
+  mosi_pin: GPIO8
+
+one_wire:
+  - platform: gpio
+    pin: GPIO7
+
+globals:
+  - id: shutting_down
+    type: bool
+    initial_value: "false"
+
+http_request:
+  timeout: 5s
+  verify_ssl: false
+
+# 정상 종료 시퀀스 — ESP32가 주체. HA 없이도 완결된다.
+script:
+  - id: graceful_shutdown
+    mode: single
+    then:
+      - globals.set: {id: shutting_down, value: "true"}
+      - http_request.post:
+          url: ${bc250_shutdown_url}
+      - delay: !lambda "return (uint32_t) id(shutdown_wait).state * 1000;"
+      - switch.turn_off: server_power
+      - globals.set: {id: shutting_down, value: "false"}
+
+button:
+  - platform: template
+    name: "정상 종료"
+    icon: mdi:power-cycle
+    on_press: [script.execute: graceful_shutdown]
+  - platform: restart
+    id: restart_btn
+    name: "컨트롤러 재시작"
+
+# ─── 로컬 설정값 (메뉴·웹·HA 어디서 바꿔도 플래시에 저장) ───
+select:
+  - platform: template
+    id: fan_mode
+    name: "팬 모드"
+    options: ["자동", "수동"]
+    initial_option: "자동"
+    restore_value: true
+    optimistic: true
+  - platform: template
+    id: fan_preset
+    name: "팬 프리셋"
+    options: ["조용히", "표준", "성능"]
+    initial_option: "표준"
+    restore_value: true
+    optimistic: true
+
+number:
+  - platform: template
+    id: manual_speed
+    name: "수동 팬 속도"
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 50
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "%"
+  - platform: template
+    id: display_brightness
+    name: "화면 밝기"
+    min_value: 10
+    max_value: 100
+    step: 10
+    initial_value: 80
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "%"
+    on_value:
+      - lambda: 'id(backlight_pwm).set_level(x / 100.0f);'
+  - platform: template
+    id: overheat_temp
+    name: "과열 경고 온도 C"
+    min_value: 70
+    max_value: 95
+    step: 1
+    initial_value: 85
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "°C"
+  - platform: template
+    id: shutdown_wait
+    name: "종료 대기 시간 s"
+    min_value: 30
+    max_value: 180
+    step: 15
+    initial_value: 60
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "s"
+
+# ─── 전원 제어 ───────────────────────────────
+switch:
+  - platform: gpio
+    id: relay
+    pin: GPIO4
+    inverted: true          # active-low 릴레이 모듈 기준
+    restore_mode: RESTORE_DEFAULT_OFF  # 재부팅해도 마지막 전원 상태 유지 (기본=서버 ON)
+
+  - platform: template
+    id: server_power
+    name: "서버 전원"
+    icon: mdi:server
+    lambda: 'return !id(relay).state;'
+    turn_on_action:  [switch.turn_off: relay]
+    turn_off_action: [switch.turn_on: relay]
+
+# ─── 입력 ───────────────────────────────────
+binary_sensor:
+  - platform: gpio
+    id: power_button
+    pin: {number: GPIO6, mode: {input: true, pullup: true}, inverted: true}
+    on_multi_click:
+      # 짧게: 꺼져 있으면 켬 / 켜져 있으면 ESP32가 직접 정상 종료 수행
+      - timing: [ON for at most 1s]
+        then:
+          - if:
+              condition: {switch.is_off: server_power}
+              then: [switch.turn_on: server_power]
+              else: [script.execute: graceful_shutdown]
+      # 5초 이상: 강제 전원 컷
+      - timing: [ON for at least 5s]
+        then: [switch.turn_off: server_power]
+
+  - platform: gpio          # 메뉴 버튼 A: 이동
+    id: btn_nav
+    pin: {number: GPIO12, mode: {input: true, pullup: true}, inverted: true}
+    on_multi_click:
+      - timing: [ON for at most 0.6s]
+        then:
+          - if:
+              condition: {display_menu.is_active: settings_menu}
+              then: [display_menu.down: settings_menu]
+              else: [display_menu.show: settings_menu]
+      - timing: [ON for at least 0.8s]
+        then:
+          - if:
+              condition: {display_menu.is_active: settings_menu}
+              then: [display_menu.up: settings_menu]
+
+  - platform: gpio          # 메뉴 버튼 B: 선택
+    id: btn_sel
+    pin: {number: GPIO13, mode: {input: true, pullup: true}, inverted: true}
+    on_multi_click:
+      - timing: [ON for at most 0.6s]
+        then:
+          - if:
+              condition: {display_menu.is_active: settings_menu}
+              then: [display_menu.enter: settings_menu]
+              else: [display_menu.show: settings_menu]
+      - timing: [ON for at least 1.2s]
+        then: [display_menu.hide: settings_menu]
+
+  - platform: gpio
+    id: psu_ok
+    name: "PSU 실제 켜짐"
+    pin: {number: GPIO5, mode: INPUT}   # PWR_OK(회색) 10k+10k 분압
+    device_class: power
+
+  - platform: template
+    id: fan_error
+    name: "팬 이상"
+    device_class: problem
+    lambda: |-
+      return id(psu_ok).state && id(fan_pct).state > 20 && id(fan_rpm).state < 100;
+    filters: [delayed_on: 30s]
+
+  - platform: template
+    id: overheat
+    name: "과열"
+    device_class: heat
+    lambda: 'return id(gpu_temp).state > id(overheat_temp).state;'
+
+# ─── 센서 ───────────────────────────────────
+sensor:
+  - platform: dallas_temp
+    id: gpu_temp
+    name: "GPU 온도"
+    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    update_interval: 5s
+  - platform: dallas_temp
+    id: case_temp
+    name: "케이스 온도"
+    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    update_interval: 10s
+  - platform: pulse_counter
+    id: fan_rpm
+    name: "팬 RPM"
+    pin: {number: GPIO11, mode: {input: true, pullup: true}}
+    unit_of_measurement: RPM
+    filters: [multiply: 0.5]      # 2펄스/회전
+    update_interval: 5s
+  - platform: template
+    id: fan_pct
+    name: "팬 속도"
+    unit_of_measurement: "%"
+    lambda: 'return id(the_fan).speed;'
+    update_interval: 5s
+  - platform: uptime
+    id: uptime_s
+    name: "컨트롤러 업타임"
+  - platform: wifi_signal
+    id: wifi_rssi
+    name: "WiFi 신호"
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: ip_addr
+      name: "IP 주소"
+
+# ─── 팬 ─────────────────────────────────────
+output:
+  - platform: ledc
+    id: fan_pwm_out
+    pin: GPIO10
+    frequency: 25000 Hz
+  - platform: ledc          # 디스플레이 백라이트 PWM
+    id: backlight_pwm
+    pin: GPIO18
+    frequency: 5000 Hz
+
+fan:
+  - platform: speed
+    id: the_fan
+    name: "쿨링팬"
+    output: fan_pwm_out
+
+# 팬 커브: 40→20% 50→35% 60→50% 70→70% 80→100% (선형보간)
+# 프리셋: 조용히 −10%p / 표준 0 / 성능 +15%p, 과열 임계값 이상이면 무조건 100%
+interval:
+  - interval: 5s
+    then:
+      # 백라이트 밝기를 number 값과 동기화 (부팅 직후 복원값 반영)
+      - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
+      - lambda: |-
+          if (id(fan_mode).current_option().str() == "수동") {
+            auto call = id(the_fan).turn_on();
+            call.set_speed((int) id(manual_speed).state);
+            call.perform();
+            return;
+          }
+          float t = id(gpu_temp).state;
+          if (isnan(t)) return;
+          float pct;
+          if      (t >= id(overheat_temp).state) pct = 100;
+          else if (t >= 80) pct = 100;
+          else if (t >= 70) pct = 70  + (t-70)*3.0;
+          else if (t >= 60) pct = 50  + (t-60)*2.0;
+          else if (t >= 50) pct = 35  + (t-50)*1.5;
+          else if (t >= 40) pct = 20  + (t-40)*1.5;
+          else              pct = 20;
+          if (id(fan_preset).current_option().str() == "조용히")      pct -= 10;
+          else if (id(fan_preset).current_option().str() == "성능")   pct += 15;
+          if (pct < 10)  pct = 10;
+          if (pct > 100) pct = 100;
+          auto call = id(the_fan).turn_on();
+          call.set_speed((int)pct);
+          call.perform();
+      # 상태 LED: 꺼짐=OFF / 종료중=노랑 / 이상=빨강 / 정상=초록
+      - lambda: |-
+          auto call = id(status_led).turn_on();
+          if (!id(server_power).state) { id(status_led).turn_off().perform(); return; }
+          if (id(shutting_down)) call.set_rgb(1.0, 0.7, 0.0);
+          else if (id(fan_error).state || id(overheat).state) call.set_rgb(1.0, 0.0, 0.0);
+          else call.set_rgb(0.0, 1.0, 0.0);
+          call.set_brightness(0.4);
+          call.perform();
+  - interval: 7s
+    then:
+      - if:
+          condition: {display_menu.is_active: settings_menu}
+          then: []   # 메뉴 사용 중엔 화면 자동 순환 정지
+          else:
+            - display.page.show_next: lcd
+            - component.update: lcd
+
+# ─── 상태 LED ────────────────────────────────
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "상태 LED"
+    pin: GPIO48
+    chipset: WS2812
+    num_leds: 1
+    channel_colors: GRB
+
+# ─── 폰트 (240×320 화면에 맞춘 크기) ─────────
+font:
+  - file: "gfonts://Roboto@700"     # 대형 온도 표시
+    id: f_48
+    size: 48
+    glyphs: '0123456789.-°C'
+  - file: "gfonts://Roboto@700"     # 중형 값/제목
+    id: f_28
+    size: 28
+    glyphs: '0123456789.-°%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :/'
+  - file: "gfonts://Roboto@500"     # 소형 라벨/보조 값
+    id: f_20
+    size: 20
+    glyphs: '0123456789.-°%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :/'
+  - file: "gfonts://Roboto@500"     # 최소형 라벨(하단 아이콘)
+    id: f_14
+    size: 14
+    glyphs: '0123456789.-°%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :/'
+  - file: "gfonts://Noto Sans KR@500"   # 메뉴용 한글 폰트
+    id: f_kr
+    size: 22
+    glyphs: ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.%<>+-:/°팬모드수동프리셋화면밝기과열경고종료대시간컨트롤러재부팅닫자조용히표준성능'
+
+# ─── ST7789V 240×320 디스플레이 ──────────────
+display:
+  - platform: st7789v
+    id: lcd
+    model: custom
+    height: 320
+    width: 240
+    offset_height: 0
+    offset_width: 0
+    cs_pin: GPIO17
+    dc_pin: GPIO15
+    reset_pin: GPIO16
+    rotation: 0
+    update_interval: 1s
+    pages:
+      # ── 메인 화면: 전원 + 온도 + 팬 + 상태 아이콘 ──
+      - id: pg_main
+        lambda: |-
+          // 상단 헤더 (배경 + 전원 상태 원형 아이콘 + 타이틀 + ON/OFF)
+          it.filled_rectangle(0, 0, 240, 56, Color(26, 36, 52));
+          if (!id(server_power).state) {
+            it.filled_circle(24, 28, 11, Color(110, 110, 110));        // 꺼짐: 회색
+          } else if (id(shutting_down)) {
+            it.filled_circle(24, 28, 11, Color(255, 200, 0));          // 종료중: 노랑
+          } else if (id(fan_error).state || id(overheat).state) {
+            it.filled_circle(24, 28, 11, Color(255, 60, 60));          // 이상: 빨강
+          } else {
+            it.filled_circle(24, 28, 11, Color(0, 220, 120));          // 정상: 초록
+          }
+          it.print(44, 12, id(f_28), Color(255, 255, 255), "BC250");
+          it.print(158, 16, id(f_20),
+                   id(server_power).state ? Color(0, 220, 120) : Color(150, 150, 150),
+                   id(server_power).state ? "ON" : "OFF");
+
+          // GPU 온도 (대형)
+          it.print(18, 68, id(f_20), Color(150, 160, 180), "GPU TEMP");
+          if (isnan(id(gpu_temp).state)) {
+            it.print(18, 92, id(f_48), Color(255, 255, 255), "--");
+          } else {
+            it.printf(18, 92, id(f_48), Color(255, 255, 255), "%.1f\u00B0C", id(gpu_temp).state);
+          }
+
+          // 케이스 온도
+          it.print(18, 152, id(f_20), Color(150, 160, 180), "CASE TEMP");
+          if (isnan(id(case_temp).state)) {
+            it.print(18, 176, id(f_28), Color(255, 255, 255), "--");
+          } else {
+            it.printf(18, 176, id(f_28), Color(255, 255, 255), "%.1f\u00B0C", id(case_temp).state);
+          }
+
+          // 팬
+          it.print(18, 214, id(f_20), Color(150, 160, 180), "FAN");
+          it.printf(18, 238, id(f_28), Color(255, 255, 255), "%.0f RPM", (float) id(fan_rpm).state);
+          it.printf(150, 238, id(f_28), Color(255, 255, 255), "%.0f%%", (float) id(the_fan).speed);
+
+          // 하단 상태 아이콘 바 (FAN / TEMP / NET)
+          it.filled_rectangle(0, 272, 240, 48, Color(26, 36, 52));
+          // 팬 상태
+          it.filled_circle(38, 296, 8, id(fan_error).state ? Color(255, 60, 60) : Color(0, 220, 120));
+          it.print(52, 288, id(f_14), Color(220, 220, 220), "FAN");
+          // 온도 상태
+          it.filled_circle(112, 296, 8, id(overheat).state ? Color(255, 60, 60) : Color(0, 220, 120));
+          it.print(126, 288, id(f_14), Color(220, 220, 220), "TEMP");
+          // 네트워크 상태
+          it.filled_circle(186, 296, 8,
+                           wifi::global_wifi_component->is_connected() ? Color(0, 220, 120) : Color(255, 200, 0));
+          it.print(200, 288, id(f_14), Color(220, 220, 220), "NET");
+
+      # ── 네트워크 화면 ──
+      - id: pg_net
+        lambda: |-
+          it.filled_rectangle(0, 0, 240, 320, Color(18, 24, 36));
+          it.print(18, 16, id(f_28), Color(255, 255, 255), "Network");
+
+          it.print(18, 70, id(f_20), Color(150, 160, 180), "WiFi");
+          if (wifi::global_wifi_component->is_connected()) {
+            it.print(18, 96, id(f_28), Color(0, 220, 120), "CONNECTED");
+          } else {
+            it.print(18, 96, id(f_28), Color(255, 200, 0), "OFFLINE");
+          }
+
+          it.print(18, 152, id(f_20), Color(150, 160, 180), "IP ADDRESS");
+          it.print(18, 178, id(f_20), Color(255, 255, 255), id(ip_addr).state.c_str());
+
+          it.print(18, 226, id(f_20), Color(150, 160, 180), "SIGNAL");
+          it.printf(18, 252, id(f_20), Color(255, 255, 255), "%d dBm", (int) id(wifi_rssi).state);
+
+# ─── 로컬 설정 메뉴 (버튼 2개로 조작) ───────────
+graphical_display_menu:
+  id: settings_menu
+  display: lcd
+  font: f_kr
+  active: false
+  mode: rotary
+  on_redraw:
+    then: [component.update: lcd]
+  items:
+    - type: select
+      text: "팬 모드"
+      select: fan_mode
+    - type: number
+      text: "수동 팬 %"
+      number: manual_speed
+    - type: select
+      text: "팬 프리셋"
+      select: fan_preset
+    - type: number
+      text: "화면 밝기"
+      number: display_brightness
+    - type: number
+      text: "과열 경고 C"
+      number: overheat_temp
+    - type: number
+      text: "종료 대기 s"
+      number: shutdown_wait
+    - type: command
+      text: "컨트롤러 재부팅"
+      on_value:
+        then: [button.press: restart_btn]
+    - type: command
+      text: "< 닫기"
+      on_value:
+        then: [display_menu.hide: settings_menu]
