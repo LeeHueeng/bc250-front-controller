@@ -194,6 +194,50 @@
 </table>
 </div>
 
+
+<h2>5. 사용법 (조작 설명서)</h2>
+<div class="card">
+<table>
+<tr><th colspan="3">🔘 버튼 조작</th></tr>
+<tr><th>버튼</th><th>동작</th><th>결과</th></tr>
+<tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷)</td></tr>
+<tr><td>5초 이상</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만)</td></tr>
+<tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 열기 / 다음 항목으로 이동</td></tr>
+<tr><td>길게(0.8초)</td><td>이전 항목으로 이동</td></tr>
+<tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td>항목 선택 → 값 변경 모드 진입/확정</td></tr>
+<tr><td>길게(1.2초)</td><td>메뉴 닫기</td></tr>
+</table>
+<br>
+<table>
+<tr><th colspan="2">🎛️ 설정 메뉴 항목 (변경값은 플래시에 저장 — 재부팅에도 유지)</th></tr>
+<tr><td class="mono">팬 모드</td><td>자동(온도 커브) / 수동</td></tr>
+<tr><td class="mono">수동 팬 %</td><td>수동 모드일 때 팬 속도 (0~100%)</td></tr>
+<tr><td class="mono">팬 프리셋</td><td>조용히(−10%p) / 표준 / 성능(+15%p) — 자동 커브에 가감</td></tr>
+<tr><td class="mono">OLED 밝기</td><td>10~100%</td></tr>
+<tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C)</td></tr>
+<tr><td class="mono">종료 대기 s</td><td>정상 종료 시 OS가 꺼질 때까지 기다리는 시간 (30~180초)</td></tr>
+<tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — <b>서버 전원은 유지됨</b> (NC 배선 덕분)</td></tr>
+</table>
+<br>
+<table>
+<tr><th colspan="2">💡 상태 LED</th></tr>
+<tr><td>꺼짐</td><td>서버 전원 꺼짐</td></tr>
+<tr><td>🟢 초록</td><td>정상 동작</td></tr>
+<tr><td>🟡 노랑</td><td>정상 종료 진행 중</td></tr>
+<tr><td>🔴 빨강</td><td>팬 고장 또는 과열</td></tr>
+</table>
+<br>
+<table>
+<tr><th colspan="2">📶 최초 WiFi 설정 & 원격 접속</th></tr>
+<tr><td>1</td><td>첫 부팅(또는 WiFi 실패 1분 후) ESP가 <b>bc250-front-setup</b> AP를 엶 (비밀번호 없음)</td></tr>
+<tr><td>2</td><td>폰으로 접속 → 자동으로 설정 페이지 열림 (안 열리면 브라우저에서 <span class="mono">192.168.4.1</span>)</td></tr>
+<tr><td>3</td><td>집 WiFi 선택 + 비밀번호 입력 → 저장 후 자동 접속</td></tr>
+<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능</td></tr>
+<tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작)</td></tr>
+</table>
+<div class="legend">OLED 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·OLED 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.</div>
+</div>
+
 <footer>BC250 Front Controller · ESPHome bc250-front.yaml 기준 · 2026-08-21</footer>
 </div>
 </body>
