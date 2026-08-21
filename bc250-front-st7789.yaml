@@ -312,7 +312,8 @@ interval:
       # 백라이트 밝기를 number 값과 동기화 (부팅 직후 복원값 반영)
       - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
       - lambda: |-
-          if (id(fan_mode).current_option().str() == "수동") {
+          // fan_mode 옵션: 0=자동, 1=수동 (active_index는 버전 무관하게 동일 API)
+          if (id(fan_mode).active_index().value_or(0) == 1) {
             auto call = id(the_fan).turn_on();
             call.set_speed((int) id(manual_speed).state);
             call.perform();
@@ -328,8 +329,10 @@ interval:
           else if (t >= 50) pct = 35  + (t-50)*1.5;
           else if (t >= 40) pct = 20  + (t-40)*1.5;
           else              pct = 20;
-          if (id(fan_preset).current_option().str() == "조용히")      pct -= 10;
-          else if (id(fan_preset).current_option().str() == "성능")   pct += 15;
+          // fan_preset 옵션: 0=조용히, 1=표준, 2=성능
+          auto preset_idx = id(fan_preset).active_index().value_or(1);
+          if (preset_idx == 0)      pct -= 10;
+          else if (preset_idx == 2) pct += 15;
           if (pct < 10)  pct = 10;
           if (pct > 100) pct = 100;
           auto call = id(the_fan).turn_on();
