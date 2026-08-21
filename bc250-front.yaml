@@ -1,0 +1,271 @@
+# BC250 Front Controller — ESP32-S3
+# 스펙 대비 조정된 부분:
+#  - BC-250에는 전원 버튼이 없다 → 릴레이는 "버튼 누르기(300ms)"가 아니라
+#    ATX PS_ON을 잡고 있는 유지(hold) 방식. NC 접점 배선이라 ESP 재부팅에도 서버 안 꺼짐.
+#  - "정상 종료"는 하드웨어로 불가능 → 버튼 짧게 누르면 HA 이벤트를 쏘고,
+#    HA 자동화가 OS 종료를 수행한 뒤 전원을 내리는 구조 (아래 주석 참고).
+#
+# 핀맵 (ESP32-S3):
+#  GPIO4  릴레이 IN            GPIO8  I2C SDA (OLED)
+#  GPIO5  PWR_OK 감지(분압)     GPIO9  I2C SCL (OLED)
+#  GPIO6  전원 버튼(GND로)      GPIO10 팬 PWM 출력
+#  GPIO7  DS18B20 원와이어      GPIO11 팬 타코 입력
+#  GPIO48 WS2812 상태 LED (외장이면 핀 변경)
+
+substitutions:
+  # BC-250 OS 세팅 후 실제 IP·포트로 교체 (BC-250 쪽 shutdown 에이전트는 OS 설치 때 만듦)
+  bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"
+
+esphome:
+  name: bc250-front
+  friendly_name: BC250 컨트롤러
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  hardware_uart: UART0   # 이 보드는 CH343(외장 USB-시리얼)이라 UART0으로 로그 출력
+api:            # HA 직결 (자동 발견·이벤트·서비스)
+  reboot_timeout: 0s   # HA가 죽어 있어도 컨트롤러는 절대 재부팅하지 않음
+ota:
+  platform: esphome
+web_server:     # 웹 대시보드 — http://bc250-front.local
+  version: 3
+
+# MQTT가 꼭 필요하면 주석 해제 (HA만 쓸 거면 api로 충분)
+# mqtt:
+#   broker: !secret mqtt_broker
+#   username: !secret mqtt_user
+#   password: !secret mqtt_password
+
+# WiFi 자격증명은 펌웨어에 없음 — 첫 부팅 시 ESP가 AP("bc250-front-setup")를 열고,
+# 폰/노트북으로 접속하면 설정 페이지가 떠서 집 WiFi를 고르고 비번 입력 → 플래시에 저장.
+wifi:
+  reboot_timeout: 0s   # WiFi 끊겨도 재부팅 금지 — 로컬 제어(버튼·팬커브·OLED)는 계속 동작
+  ap:
+    ssid: "bc250-front-setup"   # 접속 실패 1분 후 자동으로 설정용 AP 다시 열림
+captive_portal:
+improv_serial:   # USB로도 설정 가능 (web.esphome.io)
+
+i2c:
+  sda: GPIO8
+  scl: GPIO9
+
+one_wire:
+  - platform: gpio
+    pin: GPIO7
+
+globals:
+  - id: fan_auto
+    type: bool
+    restore_value: true
+    initial_value: "true"
+  - id: shutting_down
+    type: bool
+    initial_value: "false"
+
+http_request:
+  timeout: 5s
+  verify_ssl: false
+
+# 정상 종료 시퀀스 — ESP32가 주체. HA 없이도 완결된다:
+# BC-250에 종료 명령(HTTP) → 60초 대기(OS 종료 시간) → 전원 컷.
+# 명령이 안 닿아도(서버 행) 60초 후 컷 = 실물 PC의 "전원버튼 길게 누름"과 같은 의미.
+script:
+  - id: graceful_shutdown
+    mode: single
+    then:
+      - globals.set: {id: shutting_down, value: "true"}
+      - http_request.post:
+          url: ${bc250_shutdown_url}
+      - delay: 60s
+      - switch.turn_off: server_power
+      - globals.set: {id: shutting_down, value: "false"}
+
+button:
+  - platform: template
+    name: "정상 종료"
+    icon: mdi:power-cycle
+    on_press: [script.execute: graceful_shutdown]
+  - platform: restart
+    name: "컨트롤러 재시작"
+
+# ─── 전원 제어 ───────────────────────────────
+switch:
+  - platform: gpio
+    id: relay
+    pin: GPIO4
+    inverted: true          # active-low 릴레이 모듈 기준
+    restore_mode: RESTORE_DEFAULT_OFF  # 재부팅해도 마지막 전원 상태 유지 (기본=서버 ON)
+
+  - platform: template
+    id: server_power
+    name: "서버 전원"
+    icon: mdi:server
+    lambda: 'return !id(relay).state;'
+    turn_on_action:  [switch.turn_off: relay]
+    turn_off_action: [switch.turn_on: relay]
+
+  - platform: template
+    name: "팬 자동 모드"
+    icon: mdi:fan-auto
+    lambda: 'return id(fan_auto);'
+    turn_on_action:  [globals.set: {id: fan_auto, value: "true"}]
+    turn_off_action: [globals.set: {id: fan_auto, value: "false"}]
+
+# ─── 입력 ───────────────────────────────────
+binary_sensor:
+  - platform: gpio
+    id: power_button
+    pin: {number: GPIO6, mode: {input: true, pullup: true}, inverted: true}
+    on_multi_click:
+      # 짧게: 꺼져 있으면 켬 / 켜져 있으면 ESP32가 직접 정상 종료 수행
+      - timing: [ON for at most 1s]
+        then:
+          - if:
+              condition: {switch.is_off: server_power}
+              then: [switch.turn_on: server_power]
+              else: [script.execute: graceful_shutdown]
+      # 5초 이상: 강제 전원 컷
+      - timing: [ON for at least 5s]
+        then: [switch.turn_off: server_power]
+
+  - platform: gpio
+    id: psu_ok
+    name: "PSU 실제 켜짐"
+    pin: {number: GPIO5, mode: INPUT}   # PWR_OK(회색) 10k+10k 분압
+    device_class: power
+
+  - platform: template
+    id: fan_error
+    name: "팬 이상"
+    device_class: problem
+    lambda: |-
+      return id(psu_ok).state && id(fan_pct).state > 20 && id(fan_rpm).state < 100;
+    filters: [delayed_on: 30s]
+
+  - platform: template
+    id: overheat
+    name: "과열"
+    device_class: heat
+    lambda: 'return id(gpu_temp).state > 85;'
+
+# ─── 센서 ───────────────────────────────────
+sensor:
+  - platform: dallas_temp
+    id: gpu_temp
+    name: "GPU 온도"
+    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    update_interval: 5s
+  - platform: dallas_temp
+    id: case_temp
+    name: "케이스 온도"
+    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    update_interval: 10s
+  - platform: pulse_counter
+    id: fan_rpm
+    name: "팬 RPM"
+    pin: {number: GPIO11, mode: {input: true, pullup: true}}
+    unit_of_measurement: RPM
+    filters: [multiply: 0.5]      # 2펄스/회전
+    update_interval: 5s
+  - platform: template
+    id: fan_pct
+    name: "팬 속도"
+    unit_of_measurement: "%"
+    lambda: 'return id(the_fan).speed;'
+    update_interval: 5s
+  - platform: uptime
+    name: "컨트롤러 업타임"
+  - platform: wifi_signal
+    name: "WiFi 신호"
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: ip_addr
+      name: "IP 주소"
+
+# ─── 팬 ─────────────────────────────────────
+output:
+  - platform: ledc
+    id: fan_pwm_out
+    pin: GPIO10
+    frequency: 25000 Hz
+
+fan:
+  - platform: speed
+    id: the_fan
+    name: "쿨링팬"
+    output: fan_pwm_out
+
+# 팬 커브: 40→20% 50→35% 60→50% 70→70% 80→100% (선형보간, 85↑ 무조건 100%)
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          if (!id(fan_auto)) return;
+          float t = id(gpu_temp).state;
+          if (isnan(t)) return;
+          float pct;
+          if      (t >= 85) pct = 100;
+          else if (t >= 80) pct = 100;
+          else if (t >= 70) pct = 70  + (t-70)*3.0;
+          else if (t >= 60) pct = 50  + (t-60)*2.0;
+          else if (t >= 50) pct = 35  + (t-50)*1.5;
+          else if (t >= 40) pct = 20  + (t-40)*1.5;
+          else              pct = 20;
+          auto call = id(the_fan).turn_on();
+          call.set_speed((int)pct);
+          call.perform();
+      # 상태 LED: 꺼짐=OFF / 종료중=노랑 / 이상=빨강 / 정상=초록
+      - lambda: |-
+          auto call = id(status_led).turn_on();
+          if (!id(server_power).state) { id(status_led).turn_off().perform(); return; }
+          if (id(shutting_down)) call.set_rgb(1.0, 0.7, 0.0);
+          else if (id(fan_error).state || id(overheat).state) call.set_rgb(1.0, 0.0, 0.0);
+          else call.set_rgb(0.0, 1.0, 0.0);
+          call.set_brightness(0.4);
+          call.perform();
+  - interval: 7s
+    then: [display.page.show_next: oled, component.update: oled]
+
+# ─── 상태 LED ────────────────────────────────
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "상태 LED"
+    pin: GPIO48
+    chipset: WS2812
+    num_leds: 1
+    rgb_order: GRB
+
+# ─── OLED ───────────────────────────────────
+font:
+  - file: "gfonts://Roboto@500"
+    id: f1
+    size: 12
+  - file: "gfonts://Roboto@700"
+    id: f2
+    size: 16
+
+display:
+  - platform: ssd1306_i2c
+    id: oled
+    model: SSD1306 128x64
+    pages:
+      - id: pg_main
+        lambda: |-
+          it.printf(0, 0, id(f2), "BC250 %s", id(server_power).state ? "ON" : "OFF");
+          it.printf(0, 20, id(f1), "GPU %.1f\xC2\xB0  CASE %.1f\xC2\xB0", id(gpu_temp).state, id(case_temp).state);
+          it.printf(0, 36, id(f1), "FAN %.0f%%  %.0f RPM", id(the_fan).speed * 1.0, id(fan_rpm).state);
+          if (id(fan_error).state) it.print(0, 52, id(f1), "!! FAN FAILURE");
+          else if (id(overheat).state) it.print(0, 52, id(f1), "!! OVERHEAT");
+      - id: pg_net
+        lambda: |-
+          it.print(0, 0, id(f2), "Network");
+          it.printf(0, 20, id(f1), "WiFi %s", wifi::global_wifi_component->is_connected() ? "OK" : "...");
+          it.printf(0, 36, id(f1), "%s", id(ip_addr).state.c_str());

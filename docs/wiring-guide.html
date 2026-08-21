@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BC250 컨트롤러 배선도</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:#f4f6f9; color:#1a2230; line-height:1.6; padding:20px 14px 60px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin-bottom:4px; }
+  .sub { color:#5a6577; font-size:.9rem; margin-bottom:24px; }
+  h2 { font-size:1.15rem; margin:34px 0 12px; padding-left:10px; border-left:4px solid #3b6fd4; }
+  .card { background:#fff; border:1px solid #dde3ec; border-radius:12px; padding:16px; margin-bottom:18px; overflow-x:auto; }
+  .card svg { display:block; min-width:760px; width:100%; height:auto; }
+  table { border-collapse:collapse; width:100%; font-size:.88rem; min-width:560px; }
+  th,td { border:1px solid #dde3ec; padding:7px 10px; text-align:left; }
+  th { background:#eef2f8; }
+  td.mono, .mono { font-family:ui-monospace,Menlo,monospace; }
+  .dot { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px; border:1px solid rgba(0,0,0,.25); }
+  .warn { background:#fff7ed; border:1px solid #f5c98a; border-radius:12px; padding:14px 16px; margin:14px 0; }
+  .warn b { color:#b45309; }
+  .atx { display:grid; grid-template-columns:repeat(12,1fr); gap:4px; min-width:560px; }
+  .atx div { border-radius:6px; text-align:center; font-size:.72rem; padding:6px 2px; color:#fff; font-family:ui-monospace,monospace; border:1px solid rgba(0,0,0,.2); }
+  .legend { font-size:.85rem; color:#44506a; margin-top:8px; }
+  footer { text-align:center; color:#8b96a8; font-size:.8rem; margin-top:40px; }
+
+  /* ── 실물 핀맵 ── */
+  .pinmap { display:grid; grid-template-columns:1fr 92px 84px 92px 1fr; gap:3px 0; min-width:720px; font-size:.8rem; align-items:stretch; }
+  .pinmap .cap { grid-column:2 / 5; background:#2b3446; color:#cbd5e6; text-align:center; border-radius:10px 10px 0 0; padding:8px 4px; font-weight:700; }
+  .pinmap .capb { grid-column:2 / 5; background:#2b3446; color:#8b98b0; text-align:center; border-radius:0 0 10px 10px; padding:6px 4px; font-size:.75rem; }
+  .pinmap .body { background:#2b3446; }
+  .pin { font-family:ui-monospace,Menlo,monospace; text-align:center; padding:5px 2px; border:1px solid #c3ccdb; background:#e9edf4; color:#7b8699; }
+  .pin.u { color:#fff; font-weight:700; border-color:rgba(0,0,0,.25); }
+  .lb { display:flex; align-items:center; font-size:.78rem; color:#8b96a8; }
+  .lb.l { justify-content:flex-end; text-align:right; padding-right:9px; }
+  .lb.r { justify-content:flex-start; padding-left:9px; }
+  .lb.u { color:#1a2230; font-weight:600; }
+  .lb .no { color:#b45309; font-weight:400; font-size:.73rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>⚡ BC250 전면 컨트롤러 배선도</h1>
+<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front.yaml과 1:1 대응)</div>
+
+<div class="warn">
+<b>⚠ 시작 전 3가지</b><br>
+① 릴레이 접점은 반드시 <b>NC</b>에 배선 (ESP가 죽어도 서버는 켜진 상태 유지)<br>
+② ATX 24핀 구멍은 <b>번호보다 선 색깔</b>로 찾을 것 — 녹색·보라·회색은 파워에 딱 1가닥씩이라 헷갈릴 수 없음<br>
+③ PWR_OK(회색)는 5V라서 <b>10kΩ 분압 없이 GPIO에 직결 금지</b>
+</div>
+
+<h2>1. ESP32-S3 실물 핀 배치 (USB가 위로 가게 놓고 볼 것)</h2>
+<div class="card">
+<div class="pinmap">
+  <div></div><div class="cap">▣ USB-C (위쪽)<br>ESP32-S3</div><div></div>
+
+  <div class="lb l u">센서·OLED 전원 (3.3V) →</div><div class="pin u" style="background:#d0342f">3V3</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분 (아무 GND나 공통)</div>
+  <div class="lb l">(3.3V 여분)</div><div class="pin">3V3</div><div class="body"></div><div class="pin">TX·43</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀 (리셋)</div><div class="pin">RST</div><div class="body"></div><div class="pin">RX·44</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">릴레이 IN →</div><div class="pin u" style="background:#2f6fd0">4</div><div class="body"></div><div class="pin">1</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">PWR_OK 분압점 (10k+10k) →</div><div class="pin u" style="background:#5b6472">5</div><div class="body"></div><div class="pin">2</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">전원 버튼 (반대쪽 GND) →</div><div class="pin u" style="background:#1d6fb8">6</div><div class="body"></div><div class="pin">42</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">DS18B20 DATA (4.7k→3.3V) →</div><div class="pin u" style="background:#e07b00">7</div><div class="body"></div><div class="pin">41</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">15</div><div class="body"></div><div class="pin">40</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">16</div><div class="body"></div><div class="pin">39</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">17</div><div class="body"></div><div class="pin">38</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">18</div><div class="body"></div><div class="pin">37</div><div class="lb r"><span class="no">⛔ PSRAM 예약 — 쓰지 말 것</span></div>
+  <div class="lb l u">OLED SDA →</div><div class="pin u" style="background:#0b8f8f">8</div><div class="body"></div><div class="pin">36</div><div class="lb r"><span class="no">⛔ PSRAM 예약 — 쓰지 말 것</span></div>
+  <div class="lb l"><span class="no">⛔ 스트래핑 — 비워둘 것</span></div><div class="pin">3</div><div class="body"></div><div class="pin">35</div><div class="lb r"><span class="no">⛔ PSRAM 예약 — 쓰지 말 것</span></div>
+  <div class="lb l"><span class="no">⛔ 스트래핑 — 비워둘 것</span></div><div class="pin">46</div><div class="body"></div><div class="pin">0</div><div class="lb r"><span class="no">⛔ BOOT 버튼 — 비워둘 것</span></div>
+  <div class="lb l u">OLED SCL →</div><div class="pin u" style="background:#8556d6">9</div><div class="body"></div><div class="pin">45</div><div class="lb r"><span class="no">⛔ 스트래핑 — 비워둘 것</span></div>
+  <div class="lb l u">팬 PWM (4핀-④) →</div><div class="pin u" style="background:#1d6fb8">10</div><div class="body"></div><div class="pin u" style="background:#c23fa4">48</div><div class="lb r u">WS2812 LED (보드 내장 — 외장이면 여기)</div>
+  <div class="lb l u">팬 TACH (4핀-③) →</div><div class="pin u" style="background:#5f8f0b">11</div><div class="body"></div><div class="pin">47</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">12</div><div class="body"></div><div class="pin">21</div><div class="lb r">빈 핀</div>
+  <div class="lb l">빈 핀</div><div class="pin">13</div><div class="body"></div><div class="pin">20</div><div class="lb r">빈 핀 (USB D+)</div>
+  <div class="lb l">빈 핀</div><div class="pin">14</div><div class="body"></div><div class="pin">19</div><div class="lb r">빈 핀 (USB D−)</div>
+  <div class="lb l u">ATX 9번 보라 5VSB →</div><div class="pin u" style="background:#7b3ff2">5V</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
+  <div class="lb l u">ATX 검정 (공통 그라운드) →</div><div class="pin u" style="background:#222">GND</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
+
+  <div></div><div class="capb">(아래쪽)</div><div></div>
+</div>
+<div class="legend">
+  <b>색칠된 핀 = 이번에 쓰는 핀</b> · 회색 = 빈 핀(연결 안 함) · ⛔ = 절대 쓰면 안 되는 핀<br>
+  ESP32-S3 DevKitC-1 표준 배열 기준 — 알리 호환보드는 간혹 순서가 다르니 <b>보드에 인쇄된 핀 이름(실크)이 최종 기준</b>. GND는 어느 GND 핀을 써도 같다.
+</div>
+</div>
+
+<h2>2. 전원 · 릴레이 계통 (연결 구조)</h2>
+<div class="card">
+<svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="13">
+  <rect x="30" y="60" width="200" height="240" rx="10" fill="#eef2f8" stroke="#8fa3c4" stroke-width="1.5"/>
+  <text x="130" y="85" text-anchor="middle" font-weight="bold" font-size="14">ATX 24핀 (놀고 있음)</text>
+  <circle cx="52" cy="110" r="5" fill="#9aa0a6"/><text x="64" y="114">8번 PWR_OK 회색</text>
+  <circle cx="52" cy="150" r="5" fill="#7b3ff2"/><text x="64" y="154">9번 5VSB 보라</text>
+  <circle cx="52" cy="190" r="5" fill="#1db954"/><text x="64" y="194">16번 PS_ON 녹색</text>
+  <circle cx="52" cy="230" r="5" fill="#222"/><text x="64" y="234">GND 검정(아무거나)</text>
+  <circle cx="52" cy="270" r="5" fill="#e8c018"/><text x="64" y="274">12V 노랑(팬용)</text>
+
+  <rect x="30" y="390" width="200" height="150" rx="10" fill="#fdeeee" stroke="#d48f8f" stroke-width="1.5"/>
+  <text x="130" y="415" text-anchor="middle" font-weight="bold" font-size="14">릴레이 모듈 (5V)</text>
+  <text x="150" y="444" text-anchor="end">VCC ●</text>
+  <text x="150" y="469" text-anchor="end">GND ●</text>
+  <text x="150" y="494" text-anchor="end">IN ●</text>
+  <circle cx="80" cy="540" r="5" fill="#1db954"/><text x="70" y="530" text-anchor="middle">COM</text>
+  <circle cx="150" cy="540" r="5" fill="#222"/><text x="152" y="530" text-anchor="middle">NC</text>
+
+  <rect x="560" y="60" width="300" height="240" rx="10" fill="#eaf6ee" stroke="#7fb894" stroke-width="1.5"/>
+  <text x="710" y="85" text-anchor="middle" font-weight="bold" font-size="14">ESP32-S3</text>
+  <text x="575" y="115">● 5V (VIN)</text>
+  <text x="575" y="155">● GND</text>
+  <text x="575" y="195">● GPIO4 → 릴레이 IN</text>
+  <text x="575" y="235">● GPIO5 ← PWR_OK 분압</text>
+
+  <path d="M230,150 H420 V110 H560" stroke="#7b3ff2" stroke-width="3" fill="none"/>
+  <path d="M300,150 V440 H160" stroke="#7b3ff2" stroke-width="3" fill="none"/>
+  <circle cx="300" cy="150" r="4" fill="#7b3ff2"/>
+  <text x="330" y="142" fill="#7b3ff2">5VSB(상시 5V)</text>
+
+  <path d="M230,230 H470 V155 H560" stroke="#222" stroke-width="3" fill="none"/>
+  <path d="M340,230 V465 H160" stroke="#222" stroke-width="3" fill="none"/>
+  <circle cx="340" cy="230" r="4" fill="#222"/>
+
+  <path d="M230,190 H255 V570 H80 V545" stroke="#1db954" stroke-width="3" fill="none"/>
+  <text x="262" y="330" fill="#128a3e">PS_ON</text>
+
+  <path d="M150,545 V565 H205" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="212" y="570" font-size="12">→ GND(검정 아무 구멍)</text>
+
+  <path d="M560,190 H520 V585 H265 V490 H160" stroke="#2f6fd0" stroke-width="3" fill="none"/>
+  <text x="380" y="600" fill="#2f6fd0">GPIO4 (제어 신호)</text>
+
+  <path d="M230,110 H300" stroke="#9aa0a6" stroke-width="3" fill="none"/>
+  <rect x="300" y="100" width="46" height="20" fill="#fff" stroke="#666"/><text x="323" y="115" text-anchor="middle" font-size="11">10k</text>
+  <path d="M346,110 H490 V235 H560" stroke="#9aa0a6" stroke-width="3" fill="none"/>
+  <circle cx="490" cy="235" r="4" fill="#555"/>
+  <rect x="480" y="255" width="20" height="44" fill="#fff" stroke="#666"/><text x="490" y="283" text-anchor="middle" font-size="11">10k</text>
+  <path d="M490,299 V325" stroke="#222" stroke-width="3"/>
+  <path d="M478,325 H502 M482,331 H498 M486,337 H494" stroke="#222" stroke-width="2"/>
+  <text x="352" y="100" fill="#666">PWR_OK 5V→2.5V</text>
+
+  <path d="M230,270 H430" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M430,270 l-12,-6 v12 z" fill="#e8c018"/>
+  <text x="300" y="262" fill="#a08508">팬 12V 전원으로</text>
+</svg>
+<div class="legend">점퍼선 수(male) 핀을 24핀 커넥터 구멍에 그대로 꽂고 글루건/테이프로 고정 — 납땜 불필요</div>
+</div>
+
+<h2>3. ATX 24핀 구멍 지도</h2>
+<div class="card">
+  <div class="atx">
+    <div style="background:#e07b00">13</div><div style="background:#2f6fd0">14</div><div style="background:#222">15</div>
+    <div style="background:#1db954;outline:3px solid #0a5c2b">16★</div>
+    <div style="background:#222;outline:3px solid #555">17★</div><div style="background:#222">18</div><div style="background:#222">19</div>
+    <div style="background:#bbb;color:#333">20</div><div style="background:#d0342f">21</div><div style="background:#d0342f">22</div><div style="background:#d0342f">23</div><div style="background:#222">24</div>
+    <div style="background:#e07b00">1</div><div style="background:#e07b00">2</div><div style="background:#222">3</div><div style="background:#d0342f">4</div>
+    <div style="background:#222">5</div><div style="background:#d0342f">6</div><div style="background:#222">7</div>
+    <div style="background:#9aa0a6;outline:3px solid #4a4f55">8★</div>
+    <div style="background:#7b3ff2;outline:3px solid #3d1b80">9★</div>
+    <div style="background:#e8c018;color:#333;outline:3px solid #8a7208">10★</div>
+    <div style="background:#e8c018;color:#333">11</div><div style="background:#e07b00">12</div>
+  </div>
+  <div class="legend">
+    커넥터 걸쇠(클립)가 위로 오게 보고 정면에서 본 배치. <b>★ = 이번에 쓰는 구멍</b> —
+    <span class="dot" style="background:#9aa0a6"></span>8 PWR_OK ·
+    <span class="dot" style="background:#7b3ff2"></span>9 5VSB ·
+    <span class="dot" style="background:#e8c018"></span>10 12V(팬) ·
+    <span class="dot" style="background:#1db954"></span>16 PS_ON ·
+    <span class="dot" style="background:#222"></span>17 GND<br>
+    ⚠ 커넥터 각인이 다를 수 있으니 <b>최종 판단은 선 색깔</b>로: 녹색·보라·회색은 1가닥뿐이다.
+  </div>
+</div>
+
+<h2>4. 전체 연결표</h2>
+<div class="card">
+<table>
+<tr><th>ESP32-S3 핀</th><th>연결 대상</th><th>비고</th></tr>
+<tr><td class="mono">5V (VIN)</td><td>ATX 9번 보라(5VSB)</td><td>상시 전원 — 파워 꺼져도 살아있음</td></tr>
+<tr><td class="mono">GND</td><td>ATX 검정(아무거나)</td><td>모든 장치 GND 공통</td></tr>
+<tr><td class="mono">3V3</td><td>OLED VCC · DS18B20 VDD · 풀업저항</td><td>3.3V 전원 레일</td></tr>
+<tr><td class="mono">GPIO4</td><td>릴레이 IN</td><td>active-low 모듈 기준(yaml inverted:true)</td></tr>
+<tr><td class="mono">GPIO5</td><td>ATX 8번 회색(PWR_OK)</td><td><b>10k+10k 분압 필수</b> (5V→2.5V)</td></tr>
+<tr><td class="mono">GPIO6</td><td>전원 버튼</td><td>반대쪽은 GND, 내부 풀업 사용</td></tr>
+<tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬</td></tr>
+<tr><td class="mono">GPIO8 / GPIO9</td><td>OLED SDA / SCL</td><td>OLED 전원은 3.3V</td></tr>
+<tr><td class="mono">GPIO10</td><td>팬 4핀-④ PWM</td><td>25kHz PWM 출력</td></tr>
+<tr><td class="mono">GPIO11</td><td>팬 4핀-③ TACH</td><td>내부 풀업, 2펄스/회전</td></tr>
+<tr><td class="mono">GPIO48</td><td>WS2812 상태 LED</td><td>devkit 내장 LED면 배선 불필요</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe">릴레이 접점: <b>COM ↔ ATX 16번 녹색(PS_ON)</b> · <b>NC ↔ GND</b> · NO는 비움 / 릴레이 VCC↔5VSB, GND↔공통</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe">팬 전원: ① GND ↔ 공통 GND · ② 12V ↔ ATX 10번 노랑 (파워 켜져 있을 때만 살아남 — 정상)</td></tr>
+</table>
+</div>
+
+<footer>BC250 Front Controller · ESPHome bc250-front.yaml 기준 · 2026-08-21</footer>
+</div>
+</body>
+</html>
