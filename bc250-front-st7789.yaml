@@ -14,9 +14,9 @@
 # ── 핀맵 (기존 그대로) ─────────────────────────────────────────────────────────────
 #  GPIO4  릴레이 IN            GPIO10 팬 PWM 출력 (25kHz)
 #  GPIO5  PWR_OK 감지(분압)     GPIO11 팬 타코 입력
-#  GPIO6  전원 버튼(GND로)      GPIO12 메뉴 버튼A (다음 항목 / 값 올리기 +)
+#  GPIO6  전원 버튼(GND로)      GPIO12 메뉴 버튼A (다음 화면 / 다음 항목 / 값 올리기 +)
 #  GPIO7  DS18B20 원와이어      GPIO13 메뉴 버튼B (선택·확정)
-#  GPIO48 WS2812 상태 LED       GPIO14 메뉴 버튼C (이전 항목 / 값 내리기 −)  ← 2026-08-31 추가
+#  GPIO48 WS2812 상태 LED       GPIO14 메뉴 버튼C (이전 화면 / 이전 항목 / 값 내리기 −)  ← 2026-08-31 추가
 #
 # ── 2026-08-31 변경 ──────────────────────────────────────────────────────────────
 #  · 5V 투입(콜드 부팅) 때 RST를 눌러야 화면이 나오던 문제: 디스플레이 초기화 전에 LCD RST를
@@ -29,6 +29,7 @@
 #  · 보안: API 암호화 키·OTA 비밀번호·웹 로그인 → secrets.yaml (secrets.yaml.example 참고, git 미포함)
 #  · 과열 위험(경고 온도 +10°C 가 60초 지속) → 자동 정상 종료, 실패하면 강제 전원 컷
 #  · 백라이트 자동 어둡게: 서버 꺼짐 / 밤 시간(SNTP 시계 맞을 때만). 버튼 누르면 30초간 원래 밝기
+#  · 컨트롤러 초기화: 설정값만 초기화(WiFi 유지) / 공장 초기화(WiFi·설정 전부 지우고 재부팅) — 메뉴·웹·HA
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -100,6 +101,7 @@ ota:
   password: !secret ota_password  # WiFi OTA 업로드 비밀번호 (esphome upload 가 자동으로 사용)
 web_server:
   version: 3
+  local: true     # 대시보드 JS/CSS를 펌웨어에 내장 — 인터넷 없는 AP 모드에서도 페이지가 깨지지 않음
   auth:
     username: admin
     password: !secret web_password   # 웹 대시보드 로그인
@@ -177,6 +179,19 @@ script:
                   - light.turn_on: {id: status_led, red: 100%, green: 0%, blue: 0%, brightness: 40%}
             - globals.set: {id: shutting_down, value: "false"}
 
+  # 설정값만 초기화 — 팬·밝기·과열·종료대기를 기본값으로. WiFi·전원 상태는 건드리지 않음
+  - id: reset_settings
+    mode: single
+    then:
+      - lambda: |-
+          { auto c = id(fan_mode).make_call();    c.set_option("자동"); c.perform(); }
+          { auto c = id(fan_preset).make_call();  c.set_option("표준"); c.perform(); }
+          { auto c = id(manual_speed).make_call();      c.set_value(50);  c.perform(); }
+          { auto c = id(display_brightness).make_call(); c.set_value(80);  c.perform(); }
+          { auto c = id(overheat_temp).make_call();      c.set_value(85);  c.perform(); }
+          { auto c = id(shutdown_wait).make_call();      c.set_value(60);  c.perform(); }
+      - logger.log: "설정값 초기화 완료 (WiFi 유지)"
+
   # 메뉴 버튼 A/C 길게 누르기: 0.6초 후부터 0.2초마다 한 칸씩 자동 반복 (놓으면 즉시 중단)
   - id: hold_next
     mode: restart
@@ -223,6 +238,13 @@ button:
   - platform: restart
     id: restart_btn
     name: "컨트롤러 재시작"
+  - platform: template
+    name: "설정값 초기화"
+    icon: mdi:backup-restore
+    on_press: [script.execute: reset_settings]
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: "공장 초기화"        # WiFi·설정 전부 지우고 재부팅 → 다시 bc250-front-setup AP
 
 # ─── 로컬 설정값 (메뉴·웹·HA 어디서 바꿔도 플래시에 저장) ───
 select:
@@ -322,7 +344,8 @@ binary_sensor:
         then: [switch.turn_off: server_power]
 
   # 메뉴 버튼 3개 (rotary 모드): A=다음 항목/값 올리기(+)  C=이전 항목/값 내리기(−)  B=선택·확정
-  # 짧게(≤0.5초) 한 칸, 길게(≥0.6초) 누르고 있으면 0.2초마다 자동 반복. 메뉴가 닫혀 있으면 아무 버튼이나 → 메뉴 열기
+  # 짧게(≤0.5초) 한 칸, 길게(≥0.6초) 누르고 있으면 0.2초마다 자동 반복.
+  # 메뉴가 닫혀 있을 때: A=다음 화면(메인↔네트워크), C=이전 화면, B=메뉴 열기  (2026-08-31: 7초 자동 순환 제거)
   - platform: gpio          # 메뉴 버튼 A: 다음 항목 / 값 올리기(+)
     id: btn_next
     pin: {number: GPIO12, mode: {input: true, pullup: true}, inverted: true}
@@ -334,7 +357,9 @@ binary_sensor:
         - if:
             condition: {display_menu.is_active: settings_menu}
             then: [display_menu.down: settings_menu]
-            else: [display_menu.show: settings_menu]
+            else:
+              - display.page.show_next: lcd
+              - component.update: lcd
     on_press:
       - lambda: 'id(last_input) = millis();'
       - script.execute: menu_timeout
@@ -355,7 +380,9 @@ binary_sensor:
         - if:
             condition: {display_menu.is_active: settings_menu}
             then: [display_menu.up: settings_menu]
-            else: [display_menu.show: settings_menu]
+            else:
+              - display.page.show_previous: lcd
+              - component.update: lcd
     on_press:
       - lambda: 'id(last_input) = millis();'
       - script.execute: menu_timeout
@@ -538,14 +565,6 @@ interval:
           else call.set_rgb(0.0, 1.0, 0.0);
           call.set_brightness(0.4);
           call.perform();
-  - interval: 7s
-    then:
-      - if:
-          condition: {display_menu.is_active: settings_menu}
-          then: []   # 메뉴 사용 중엔 화면 자동 순환 정지
-          else:
-            - display.page.show_next: lcd
-            - component.update: lcd
 
 # ─── 상태 LED ────────────────────────────────
 light:
@@ -578,7 +597,7 @@ font:
   - file: "gfonts://Noto Sans KR@500"   # 메뉴용 한글 폰트
     id: f_kr
     size: 22
-    glyphs: ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.%<>()+-:/°팬모드수동프리셋화면밝기과열경고종료대시간컨트롤러재부팅닫자조용히표준성능'
+    glyphs: ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.%<>()+-:/°팬모드수동프리셋화면밝기과열경고종료대시간컨트롤러재부팅닫자조용히표준성능값공만설소장정초취포함'
 
 # ─── ST7789V 240×320 디스플레이 ──────────────
 display:
@@ -707,6 +726,21 @@ graphical_display_menu:
       text: "컨트롤러 재부팅"
       on_value:
         then: [button.press: restart_btn]
+    - type: menu
+      text: "초기화"
+      items:
+        - type: command
+          text: "설정값만 초기화"
+          on_value:
+            then:
+              - script.execute: reset_settings
+              - display_menu.hide: settings_menu
+        - type: command
+          text: "공장 초기화(WiFi 포함)"
+          on_value:
+            then: [button.press: factory_reset_btn]
+        - type: back
+          text: "< 취소"
     - type: command
       text: "< 닫기"
       on_value:

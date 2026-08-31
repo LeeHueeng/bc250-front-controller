@@ -285,11 +285,11 @@
 <tr><th>버튼</th><th>동작</th><th>결과</th></tr>
 <tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷). <b>종료 명령이 실패하면(OS 에이전트 없음·네트워크 불통) 전원을 끊지 않고 유지</b> + LED 빨강 — 그때는 아래 3초 강제 컷을 쓴다</td></tr>
 <tr><td><b>3초</b> 누르고 있기</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만). 3초 되는 <b>순간</b> 바로 꺼지므로 놓는 타이밍은 상관없음 — 2026-08-31에 5초→3초로 변경</td></tr>
-<tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 열기 / <b>다음</b> 항목으로 이동 / 값 변경 중엔 <b>값 올리기(＋)</b></td></tr>
+<tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 닫혀 있으면 <b>다음 화면</b>(메인 ↔ 네트워크) / 메뉴에선 <b>다음</b> 항목 / 값 변경 중엔 <b>값 올리기(＋)</b></td></tr>
 <tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 ＋) — 놓으면 멈춤</td></tr>
-<tr><td rowspan="2"><b>메뉴 C</b> (GPIO14) <span class="no">2026-08-31 추가</span></td><td>짧게</td><td>메뉴 열기 / <b>이전</b> 항목으로 이동 / 값 변경 중엔 <b>값 내리기(−)</b></td></tr>
+<tr><td rowspan="2"><b>메뉴 C</b> (GPIO14) <span class="no">2026-08-31 추가</span></td><td>짧게</td><td>메뉴 닫혀 있으면 <b>이전 화면</b> / 메뉴에선 <b>이전</b> 항목 / 값 변경 중엔 <b>값 내리기(−)</b></td></tr>
 <tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 −) — 놓으면 멈춤</td></tr>
-<tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td>메뉴 열기 / 항목 선택 → 값 변경 모드 진입 / 한 번 더 누르면 <b>확정</b></td></tr>
+<tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td><b>메뉴 열기</b> / 항목 선택 → 값 변경 모드 진입 / 한 번 더 누르면 <b>확정</b></td></tr>
 <tr><td>길게(1.2초)</td><td>메뉴 닫기</td></tr>
 </table>
 <div class="legend">값 바꾸는 순서: <b>A·C로 항목 찾기 → B(변경 모드, 항목 양옆에 표시) → A(＋)·C(−)로 값 조절 → B(확정)</b>. 예전엔 A를 길게 눌러 되돌아갔지만 2026-08-31부터 C 버튼이 그 역할 — A 길게는 자동 반복이다. 메뉴는 <b>30초 동안 버튼 조작이 없으면 자동으로 닫힌다.</b></div>
@@ -303,6 +303,8 @@
 <tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C, <b>5°C 단위</b>). 여기서 <b>+10°C가 60초 지속되면 자동 정상 종료</b>, 종료 요청이 실패하면 강제 전원 컷 (마진은 yaml <span class="mono">critical_margin</span>)</td></tr>
 <tr><td class="mono">종료 대기 s</td><td>정상 종료 시 OS가 꺼질 때까지 기다리는 시간 (30~180초)</td></tr>
 <tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — 서버가 <b>켜져 있으면 전원 유지</b> (NC 배선 덕분). 서버가 <b>꺼져 있을 때</b>는 재부팅 중 릴레이 입력이 잠깐 풀리며 PSU가 약 1초 켜졌다 꺼질 수 있음(정상, 무해)</td></tr>
+<tr><td class="mono">초기화 ▶ 설정값만 초기화</td><td>팬·밝기·과열·종료대기를 <b>기본값으로</b> 되돌림 — <b>WiFi·전원 상태는 유지</b></td></tr>
+<tr><td class="mono">초기화 ▶ 공장 초기화(WiFi 포함)</td><td>WiFi 비밀번호까지 <b>전부 지우고 재부팅</b> → 다시 <span class="mono">bc250-front-setup</span> AP로 시작. 웹/HA에도 "공장 초기화" 버튼으로 있음</td></tr>
 </table>
 <br>
 <table>
@@ -318,11 +320,11 @@
 <tr><td>1</td><td>첫 부팅(또는 WiFi 실패 1분 후) ESP가 <b>bc250-front-setup</b> AP를 엶 (비밀번호 없음)</td></tr>
 <tr><td>2</td><td>폰으로 접속 → 자동으로 설정 페이지 열림 (안 열리면 브라우저에서 <span class="mono">192.168.4.1</span>)</td></tr>
 <tr><td>3</td><td>집 WiFi 선택 + 비밀번호 입력 → 저장 후 자동 접속</td></tr>
-<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능. <b>로그인: admin / <span class="mono">secrets.yaml</span>의 web_password</b></td></tr>
+<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능. <b>로그인: admin / <span class="mono">secrets.yaml</span>의 web_password</b>. 페이지 JS를 펌웨어에 내장해서(<span class="mono">local: true</span>) 인터넷 없는 AP 모드(<span class="mono">192.168.4.1</span>)에서도 정상 표시</td></tr>
 <tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작). 추가할 때 <b><span class="mono">secrets.yaml</span>의 api_key</b>를 물어봄</td></tr>
 <tr><td>6</td><td><b>비밀번호 파일</b> — 키·비밀번호(API 키, OTA 비밀번호, 웹 로그인)는 전부 <span class="mono">secrets.yaml</span>에 있고 git에는 올라가지 않는다(<span class="mono">secrets.yaml.example</span> 참고). 파일을 잃어버리면 새로 만들고 USB로 다시 플래시하면 됨. 2026-08-31 적용</td></tr>
 </table>
-<div class="legend">디스플레이 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·디스플레이 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.<br>
+<div class="legend">디스플레이 화면은 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP) 두 장 — <b>A/C 버튼으로 넘긴다</b> (2026-08-31: 7초 자동 순환 제거). 온도센서·디스플레이 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.<br>
 <b>5V 투입 직후 화면은 약 2초 동안 꺼져 있다가 켜진다 — 정상.</b> LCD 전원이 안정될 때까지 초기화를 미루는 것 (8장 참고).</div>
 </div>
 
@@ -751,7 +753,83 @@
 </table>
 </div>
 
-<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21 작성 · 2026-08-31 갱신 (버튼 C · 3초 강제종료 · 콜드부팅 대기)</footer>
+<h2>9. 쿨링팬 (4핀 PWM) 연결 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-08-31 추가</span></h2>
+<div class="card">
+<p style="margin:0 0 12px">PC용 <b>4핀 PWM 팬</b>을 그대로 쓴다. 팬 커넥터의 선 4가닥이 각각 아래로 간다. <b>선 색은 제조사마다 다르니 커넥터의 핀 위치(1~4번)가 최종 기준</b> — 커넥터 한쪽에 튀어나온 <b>걸쇠(key)</b>로 방향을 잡는다.</p>
+
+<svg viewBox="0 0 720 260" width="100%" style="max-width:720px;font-family:ui-monospace,Menlo,monospace">
+  <!-- 팬 커넥터 하우징 -->
+  <rect x="40" y="40" width="230" height="70" rx="6" fill="#2b3446"/>
+  <rect x="40" y="104" width="230" height="10" rx="3" fill="#1a2230"/>
+  <!-- 걸쇠 표시 -->
+  <rect x="40" y="30" width="230" height="10" rx="3" fill="#4a5568"/>
+  <text x="155" y="24" text-anchor="middle" font-size="11" fill="#8b96a8">걸쇠(key) — 이 면이 위</text>
+  <!-- 4개 핀 -->
+  <g font-size="12" text-anchor="middle">
+    <rect x="52"  y="52" width="44" height="46" rx="3" fill="#222"/><text x="74"  y="80" fill="#fff">1</text>
+    <rect x="104" y="52" width="44" height="46" rx="3" fill="#e8c018"/><text x="126" y="80" fill="#333">2</text>
+    <rect x="156" y="52" width="44" height="46" rx="3" fill="#3f9f5a"/><text x="178" y="80" fill="#fff">3</text>
+    <rect x="208" y="52" width="44" height="46" rx="3" fill="#3b6fd4"/><text x="230" y="80" fill="#fff">4</text>
+  </g>
+  <!-- 핀 라벨 + 목적지 -->
+  <g font-size="13">
+    <text x="74"  y="132" text-anchor="middle" fill="#cbd5e6">GND</text>
+    <text x="126" y="132" text-anchor="middle" fill="#a08508">+12V</text>
+    <text x="178" y="132" text-anchor="middle" fill="#2f7a45">TACH</text>
+    <text x="230" y="132" text-anchor="middle" fill="#2f5fc0">PWM</text>
+  </g>
+  <!-- 화살표 -->
+  <g stroke="#9aa4b6" stroke-width="1.5" fill="none" marker-end="url(#ah)">
+    <path d="M74 150 V 200"/>
+    <path d="M126 150 V 175 H 300 V 200"/>
+    <path d="M178 150 V 165 H 470 V 200"/>
+    <path d="M230 150 V 158 H 630 V 200"/>
+  </g>
+  <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+    <path d="M0 0 L8 4 L0 8 z" fill="#9aa4b6"/></marker></defs>
+  <g font-size="13" text-anchor="middle">
+    <text x="74"  y="222" fill="#1a2230" font-weight="700">공통 GND</text>
+    <text x="74"  y="240" fill="#6a7488" font-size="11">ESP GND · ATX 검정</text>
+    <text x="300" y="222" fill="#a08508" font-weight="700">ATX 10번 노랑</text>
+    <text x="300" y="240" fill="#6a7488" font-size="11">12V · 파워 켜져야 나옴</text>
+    <text x="470" y="222" fill="#2f7a45" font-weight="700">GPIO11</text>
+    <text x="470" y="240" fill="#6a7488" font-size="11">TACH(회전수)</text>
+    <text x="630" y="222" fill="#2f5fc0" font-weight="700">GPIO10</text>
+    <text x="630" y="240" fill="#6a7488" font-size="11">PWM(속도제어)</text>
+  </g>
+</svg>
+
+<table style="margin-top:6px">
+<tr><th style="width:70px">팬 핀</th><th style="width:150px">신호 (흔한 색)</th><th style="width:150px">연결 대상</th><th>비고</th></tr>
+<tr><td class="mono">1</td><td>GND (검정)</td><td>공통 GND (ESP32 GND · ATX 검정)</td><td><b>반드시 ESP와 GND를 공유</b> — 안 그러면 PWM·TACH 신호 기준이 없어 팬이 안 돌거나 RPM이 안 읽힘</td></tr>
+<tr><td class="mono">2</td><td>+12V (노랑/빨강)</td><td><b>ATX 24핀 10번 노랑(12V)</b></td><td>파워가 <b>켜져 있을 때만</b> 살아있음(정상). 3장 구멍 지도 참고</td></tr>
+<tr><td class="mono">3</td><td>TACH / Sense (초록/노랑)</td><td class="mono">GPIO11</td><td>회전수 신호. 내부 풀업 사용(2펄스/회전). <b class="no">절대 12V에 연결 금지</b> — ESP 사망</td></tr>
+<tr><td class="mono">4</td><td>PWM / Control (파랑)</td><td class="mono">GPIO10</td><td>속도 제어. 25 kHz PWM 출력(3.3V) — 대부분의 4핀 팬이 그대로 받음</td></tr>
+</table>
+
+<div class="stop" style="margin-top:14px">
+⛔ <b>TACH(3번)를 12V에 꽂지 말 것.</b> 팬 커넥터에서 12V(2번) 바로 옆이라 한 칸 밀리면 GPIO11로 12V가 들어가 ESP32가 즉시 죽는다. 꽂기 전에 <b>2번과 3번을 한 번 더 확인</b>.<br>
+⚠️ <b>GND 공유 필수.</b> 팬 12V를 ATX에서, 신호를 ESP에서 따올 때 두 GND가 이어져 있어야 한다(같은 PSU면 이미 공통). GND가 끊기면 팬이 안 돌거나 풀속으로 돈다.
+</div>
+
+<table style="margin-top:12px">
+<tr><th colspan="2">경우별 정리</th></tr>
+<tr><td style="width:150px"><b>3핀 팬</b></td><td>PWM(4번) 선이 없음 → 속도 제어 불가, <b>항상 100%로</b> 돈다. GND·12V·TACH만 위 표대로 연결하면 RPM은 읽힌다. 속도를 줄이고 싶으면 4핀 팬으로 교체</td></tr>
+<tr><td><b>팬을 안 달 때</b></td><td>아무것도 안 해도 됨 — 팬 관련 기능만 꺼지고 나머지는 정상. GPIO10/11은 비워둔다</td></tr>
+<tr><td><b>2개 이상</b></td><td>PWM(GPIO10)·TACH(GPIO11)는 팬 <b>1개</b> 기준. 여러 개면 PWM은 병렬로 나눠도 되지만 TACH는 한 개만 GPIO11에 물리고 나머지는 비운다(합산 안 됨)</td></tr>
+</table>
+
+<table style="margin-top:12px">
+<tr><th style="width:230px">증상</th><th>원인</th><th>조치</th></tr>
+<tr><td>팬이 아예 안 돔</td><td>12V(2번) 안 옴 / 파워 꺼짐 / GND 안 이어짐</td><td>서버 전원 ON 상태에서 2번 자리에 <b>약 12V</b> 나오는지, GND가 ESP와 공통인지 확인</td></tr>
+<tr><td>팬은 도는데 <b>RPM 0</b></td><td>TACH(3번)가 GPIO11에 안 감</td><td>3번↔GPIO11 통전 확인. 3핀 팬이 아닌지도 확인</td></tr>
+<tr><td>속도 조절이 안 되고 <b>항상 풀속</b></td><td>PWM(4번) 미연결 / 3핀 팬 / GND 끊김</td><td>4번↔GPIO10 확인, GND 공유 확인. 3핀 팬은 원래 조절 불가</td></tr>
+<tr><td>웹·화면에서 팬 % 는 오르는데 소리 변화 없음</td><td>드물게 오픈드레인만 받는 팬</td><td>GPIO10↔4번 사이에 10k 풀업(→팬 쪽 5V)이 필요한 경우가 있음 — 대부분은 불필요</td></tr>
+</table>
+<div class="legend">속도 규칙은 <b>5장 설정 메뉴</b>에서: 자동(온도 커브)·수동·프리셋(조용히/표준/성능). GPU 온도가 안 읽히면 안전하게 60% 고정, 과열 경고 온도 이상이면 100%.</div>
+</div>
+
+<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21 작성 · 2026-08-31 갱신 (버튼 C · 3초 강제종료 · 콜드부팅 대기 · 화면전환 버튼 · 웹내장 · 보안 · 과열 자동종료 · 백라이트 자동어둡게 · 초기화 · 팬 연결)</footer>
 </div>
 </body>
 </html>
