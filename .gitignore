@@ -2,3 +2,8 @@
 secrets.yaml
 *.log
 .DS_Store
+
+# hardware build artifacts
+hardware/tools/build/
+hardware/tools/*.jar
+__pycache__/

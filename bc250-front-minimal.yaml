@@ -5,6 +5,12 @@
 
 substitutions:
   bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"  # BC-250 OS의 종료 에이전트 주소로 교체
+  # 릴레이 구동 극성 — 시판 릴레이 모듈(옵토커플러, active-low)이면 "true",
+  # 캐리어 PCB(hardware/bc250-front-carrier, NPN 직결 active-high)면 "false"
+  relay_inverted: "true"
+  # 로그 출력 UART — DevKitC-1(CH343 USB-시리얼)은 UART0,
+  # PCBA 보드(hardware/bc250-front-pcba, 네이티브 USB-C)는 USB_SERIAL_JTAG
+  log_uart: UART0
 
 esphome:
   name: bc250-front
@@ -16,7 +22,7 @@ esp32:
     type: esp-idf
 
 logger:
-  hardware_uart: UART0   # CH343 계열 보드 필수
+  hardware_uart: ${log_uart}   # DevKit=UART0 / PCBA=USB_SERIAL_JTAG (substitutions 참고)
 api:
   reboot_timeout: 0s
 ota:
@@ -63,7 +69,7 @@ switch:
   - platform: gpio
     id: relay
     pin: GPIO4
-    inverted: true
+    inverted: ${relay_inverted}   # 모듈=true / 캐리어 PCB=false (substitutions 참고)
     restore_mode: RESTORE_DEFAULT_OFF
 
   - platform: template

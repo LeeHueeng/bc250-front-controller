@@ -63,6 +63,22 @@ BC-250은 PCIe 8핀만 쓰기 때문에 ATX 24핀 커넥터가 통째로 놀고 
 | **풀옵션** | + OLED, DS18B20×2, PWM 팬, 메뉴 버튼 2개, PWR_OK 분압 | 팬 커브, 온도, 화면, 본체 설정 메뉴, PSU 상태 감지 | [`bc250-front.yaml`](bc250-front.yaml) |
 | **풀옵션 + 컬러 LCD** | 위 풀옵션에서 OLED → **ST7789V 2.4인치 240×320 SPI** | 위 기능 전부 + 컬러 대형 화면·상태 아이콘·백라이트 밝기 조절 | [`bc250-front-st7789.yaml`](bc250-front-st7789.yaml) |
 
+## PCB — 세 가지 (선택)
+
+| | [**DIY 캐리어 보드**](hardware/bc250-front-carrier/README.ko.md) | [**반조립 PCBA**](hardware/bc250-front-pcba/README.ko.md) | [**DevKit 미니**](hardware/bc250-front-mini/README.ko.md) |
+|---|---|---|---|
+| 방식 | 빈 기판을 받아 직접 납땜, ESP32-S3 DevKitC-1을 꽂음 | JLCPCB Economic 조립 — ESP32-S3 WROOM 모듈·디스플레이 소켓·(선택) LED 3개만 직접 납땜 | **66×50 mm** 최소 크기 — DevKit을 꽂고, 부품은 DevKit 밑, LCD는 핀헤더에 선으로 |
+| 전원 스위치 | 릴레이 | MOSFET (무소음) | MOSFET (무소음) |
+| 센서 | DS18B20 | DS18B20 **또는** 10 kΩ NTC | DS18B20 |
+| 비용 (5장) | 기판 ≈ $2 + 장당 부품 ≈ $8 | JLCPCB ≈ $45 + 장당 모듈 ≈ $4 → 장당 ≈ $13 | 기판 ≈ $2 (+ SMD 조립 시 ≈ $12) + DevKit |
+| 펌웨어 | `relay_inverted: "false"` | 기본값 그대로 + `log_uart: USB_SERIAL_JTAG` | 기본값 그대로 (`relay_inverted: "true"`) |
+
+셋 다 PSU의 ATX 24핀 플러그가 보드에 그대로 꽂히고, 핀맵은 위 배선과 동일합니다.
+
+![캐리어 보드](hardware/bc250-front-carrier/images/board-top.png)
+![PCBA](hardware/bc250-front-pcba/images/board-top.png)
+![DevKit 미니](hardware/bc250-front-mini/images/board-top.png)
+
 ## 배선
 
 ![ESP32-S3 핀맵](docs/images/pinmap.png)

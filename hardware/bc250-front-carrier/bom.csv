@@ -1,0 +1,20 @@
+Ref,Qty,Value,Description,Package / footprint,Notes
+U1,1,ESP32-S3-DevKitC-1,ESP32-S3 dev board (N8R2 / N16R8 all fine),2x22 pins 2.54 mm,"buy with male pin headers soldered; plugs into the two 1x22 sockets"
+U1 socket,2,1x22 female pin socket 2.54 mm,for the DevKit,THT,"solder with the DevKit plugged in for alignment"
+J1,1,ATX 24-pin motherboard header,Molex Mini-Fit Jr 5566-24A / 39-28-1243 (4.2 mm 2x12 vertical) or compatible,THT,"KR: 디바이스마트/엘레파츠 'ATX 24핀 보드용 커넥터'; latch ramp toward the board edge"
+K1,1,SRD-05VDC-SL-C,5 V SPDT relay (Songle / Sanyou SRD),THT 19x15.5 mm,
+Q1,1,S8050,NPN transistor (2N2222A / BC337 also OK),TO-92 (E-B-C),"flat side per silkscreen"
+D1,1,1N4148,flyback diode,DO-35,"cathode band toward the 'K' mark (pin 1, +5V side)"
+R1,1,1 kΩ 1/4 W,base resistor,axial 7.62 mm,
+"R2,R3,R4",3,10 kΩ 1/4 W,base pull-down / PWR_OK divider,axial 7.62 mm,
+R5,1,4.7 kΩ 1/4 W,DS18B20 1-wire pull-up,axial 7.62 mm,
+C1,1,100 µF 16 V electrolytic,5VSB bulk,radial D5 mm P2.0 mm,"long leg (+) to the '+' mark"
+C2,1,100 nF ceramic,decoupling,disc P2.5 mm,
+J2,1,1x8 female pin socket 2.54 mm,ST7789V 2.4" SPI LCD module (GND VCC SCL SDA RES DC CS BL),THT,
+J3,1,1x4 female pin socket 2.54 mm,SSD1306 0.96" I2C OLED (GND VCC SCL SDA),THT,
+J4,1,1x4 male pin header 2.54 mm,4-pin PWM fan (GND 12V TACH PWM),THT,"a real 4-pin fan header (KK-254 style) also fits"
+"J5,J6",2,1x3 male pin header 2.54 mm,DS18B20 probes (GND DQ 3V3),THT,
+J7,1,1x3 male pin header 2.54 mm,external WS2812 (5V DIN GND),THT,optional
+J8,1,1x6 male pin header 2.54 mm,front-panel buttons (PWR GND A GND B GND),THT,optional
+"SW1,SW2,SW3",3,6x6 mm tactile switch,on-board PWR / MENU A / MENU B,THT 4-leg,
+"H1-H4",4,M3 standoff + screw,mounting (87 x 55 mm hole spacing),3.2 mm holes,optional

@@ -19,6 +19,12 @@
 substitutions:
   # BC-250 OS 세팅 후 실제 IP·포트로 교체 (BC-250 쪽 shutdown 에이전트는 OS 설치 때 만듦)
   bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"
+  # 릴레이 구동 극성 — 시판 릴레이 모듈(옵토커플러, active-low)이면 "true",
+  # 캐리어 PCB(hardware/bc250-front-carrier, NPN 직결 active-high)면 "false"
+  relay_inverted: "true"
+  # 로그 출력 UART — DevKitC-1(CH343 USB-시리얼)은 UART0,
+  # PCBA 보드(hardware/bc250-front-pcba, 네이티브 USB-C)는 USB_SERIAL_JTAG
+  log_uart: UART0
 
 esphome:
   name: bc250-front
@@ -30,7 +36,7 @@ esp32:
     type: esp-idf
 
 logger:
-  hardware_uart: UART0   # 이 보드는 CH343(외장 USB-시리얼)이라 UART0으로 로그 출력
+  hardware_uart: ${log_uart}   # DevKit=UART0 / PCBA=USB_SERIAL_JTAG (substitutions 참고)
 api:            # HA 직결 (자동 발견·이벤트·서비스) — 없어도 동작에 지장 없음
   reboot_timeout: 0s
 ota:
@@ -155,7 +161,7 @@ switch:
   - platform: gpio
     id: relay
     pin: GPIO4
-    inverted: true          # active-low 릴레이 모듈 기준
+    inverted: ${relay_inverted}   # 모듈=true / 캐리어 PCB=false (substitutions 참고)
     restore_mode: RESTORE_DEFAULT_OFF  # 재부팅해도 마지막 전원 상태 유지 (기본=서버 ON)
 
   - platform: template
@@ -237,12 +243,12 @@ sensor:
   - platform: dallas_temp
     id: gpu_temp
     name: "GPU 온도"
-    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    address: 0xf200000022dcf928   # 2026-08-28 부팅 로그에서 읽은 실제 주소 (GPU/케이스 구분은 미확인 — 손으로 쥐어 확인, 반대면 아래와 맞바꿀 것)
     update_interval: 5s
   - platform: dallas_temp
     id: case_temp
     name: "케이스 온도"
-    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    address: 0xd4000000c8df1728   # 2026-08-28 부팅 로그에서 읽은 실제 주소
     update_interval: 10s
   - platform: pulse_counter
     id: fan_rpm

@@ -82,6 +82,22 @@ Missing parts don't break anything: an absent OLED, sensor, fan or button simply
 
 **No soldering required** — male jumper pins fit straight into the unused ATX 24-pin connector holes.
 
+## PCB — three options (optional)
+
+| | [**DIY carrier board**](hardware/bc250-front-carrier/README.md) | [**Semi-assembled PCBA**](hardware/bc250-front-pcba/README.md) | [**DevKit mini**](hardware/bc250-front-mini/README.md) |
+|---|---|---|---|
+| How | bare board, hand-solder the parts, plug in an ESP32-S3-DevKitC-1 | JLCPCB Economic assembly — you solder only the ESP32-S3 WROOM module, the display socket and (optionally) the LED | **66×50 mm**, smallest — DevKit on sockets, parts under it, LCD wired to a pin header |
+| Power switch | relay | MOSFET (silent) | MOSFET (silent) |
+| Sensors | DS18B20 | DS18B20 **or** 10 kΩ NTC | DS18B20 |
+| Cost (5 boards) | ≈ $2 boards + ≈ $8 parts each | JLCPCB ≈ $45 + ≈ $4 module each → ≈ $13 each | ≈ $2 boards (≈ $12 with SMD assembly) + a DevKit |
+| Firmware | `relay_inverted: "false"` | defaults + `log_uart: USB_SERIAL_JTAG` | defaults (`relay_inverted: "true"`) |
+
+All three take the PSU's ATX 24-pin plug directly and use the pin map above.
+
+![carrier board](hardware/bc250-front-carrier/images/board-top.png)
+![PCBA](hardware/bc250-front-pcba/images/board-top.png)
+![DevKit mini](hardware/bc250-front-mini/images/board-top.png)
+
 ## Wiring
 
 ![ESP32-S3 pin map](docs/images/pinmap.png)

@@ -37,13 +37,18 @@
   .lb.r { justify-content:flex-start; padding-left:9px; }
   .lb.u { color:#1a2230; font-weight:600; }
   .lb .no { color:#b45309; font-weight:400; font-size:.73rem; }
+
+  /* ── DS18B20 방수 프로브 ── */
+  h3 { font-size:1rem; margin:24px 0 10px; color:#2b3446; }
+  .stop { background:#fdeeee; border:1px solid #d48f8f; border-radius:12px; padding:14px 16px; margin:14px 0; }
+  .stop b { color:#a11d1d; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <h1>⚡ BC250 전면 컨트롤러 배선도</h1>
-<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front.yaml과 1:1 대응)</div>
+<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front.yaml과 1:1 대응) · 6장 DS18B20 방수 프로브는 2026-08-28 추가</div>
 
 <div class="warn">
 <b>⚠ 시작 전 3가지</b><br>
@@ -63,7 +68,7 @@
   <div class="lb l u">릴레이 IN →</div><div class="pin u" style="background:#2f6fd0">4</div><div class="body"></div><div class="pin">1</div><div class="lb r">빈 핀</div>
   <div class="lb l u">PWR_OK 분압점 (10k+10k) →</div><div class="pin u" style="background:#5b6472">5</div><div class="body"></div><div class="pin">2</div><div class="lb r">빈 핀</div>
   <div class="lb l u">전원 버튼 (반대쪽 GND) →</div><div class="pin u" style="background:#1d6fb8">6</div><div class="body"></div><div class="pin">42</div><div class="lb r">빈 핀</div>
-  <div class="lb l u">DS18B20 DATA (4.7k→3.3V) →</div><div class="pin u" style="background:#e07b00">7</div><div class="body"></div><div class="pin">41</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">DS18B20 DATA 노랑 (4.7k→3.3V, 6장) →</div><div class="pin u" style="background:#e07b00">7</div><div class="body"></div><div class="pin">41</div><div class="lb r">빈 핀</div>
   <div class="lb l">빈 핀</div><div class="pin">15</div><div class="body"></div><div class="pin">40</div><div class="lb r">빈 핀</div>
   <div class="lb l">빈 핀</div><div class="pin">16</div><div class="body"></div><div class="pin">39</div><div class="lb r">빈 핀</div>
   <div class="lb l">빈 핀</div><div class="pin">17</div><div class="body"></div><div class="pin">38</div><div class="lb r">빈 핀</div>
@@ -173,17 +178,57 @@
   </div>
 </div>
 
+<div class="card">
+  <div style="font-weight:700;margin-bottom:10px">쓰는 선만 색칠 — 24가닥 중 <b>5가닥</b>만 건드린다</div>
+  <div class="atx" style="margin-bottom:14px">
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">13</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">14</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">15</div>
+    <div style="background:#1db954;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">16<br>PS_ON</div>
+    <div style="background:#222;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">17<br>GND</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">18</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">19</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">20</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">21</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">22</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">23</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">24</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">1</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">2</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">3</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">4</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">5</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">6</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">7</div>
+    <div style="background:#9aa0a6;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">8<br>PWR_OK</div>
+    <div style="background:#7b3ff2;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">9<br>5VSB</div>
+    <div style="background:#e8c018;color:#333;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">10<br>12V</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">11</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">12</div>
+  </div>
+  <table>
+    <tr><th>선 색</th><th>구멍</th><th>전압</th><th>이 보드에서 쓰는 곳</th></tr>
+    <tr><td><span class="dot" style="background:#7b3ff2"></span>보라</td><td class="mono">9</td><td><b>5VSB (5 V 상시)</b></td><td><b>ESP32 전원</b>. 파워가 꺼져 있어도 살아 있어서 컨트롤러가 항상 켜져 있음 → 보드에서 3.3 V로 낮춰 씀</td></tr>
+    <tr><td><span class="dot" style="background:#1db954"></span>녹색</td><td class="mono">16</td><td>PS_ON (파워 내부 풀업, 3.3~5 V)</td><td>접지하면 파워가 켜짐 → 릴레이 NC / MOSFET이 이 선을 GND로 당김</td></tr>
+    <tr><td><span class="dot" style="background:#9aa0a6"></span>회색</td><td class="mono">8</td><td><b>PWR_OK — 5 V 논리 신호</b></td><td>파워가 정상 기동했는지 감지. 5 V라 <b>10k+10k 분압으로 2.5 V</b>로 낮춰 GPIO5에</td></tr>
+    <tr><td><span class="dot" style="background:#e8c018"></span>노랑</td><td class="mono">10</td><td><b>12 V</b></td><td><b>팬 헤더 12V 핀만</b>. 파워가 켜져 있을 때만 나옴. 컨트롤러 회로로는 안 들어감</td></tr>
+    <tr><td><span class="dot" style="background:#222"></span>검정</td><td class="mono">17 (아무 GND나)</td><td>GND</td><td>공통 그라운드</td></tr>
+    <tr><td style="color:#8b96a8"><span class="dot" style="background:#e6eaf0"></span>빨강 · 주황 · 파랑 · 흰</td><td class="mono" style="color:#8b96a8">나머지 19개</td><td style="color:#8b96a8">5 V · 3.3 V · −12 V · NC</td><td style="color:#8b96a8">안 씀 — 비워 둔다</td></tr>
+  </table>
+  <div class="legend" style="margin-top:10px">12 V는 팬으로만 가고 컨트롤러 쪽은 전부 5 V / 3.3 V 영역이다. BC250 본체는 24핀이 아니라 PCIe 8핀(12 V)으로 먹기 때문에 24핀이 통째로 놀고 있고, 그 중 다섯 가닥만 빌려 쓴다.</div>
+</div>
+
 <h2>4. 전체 연결표</h2>
 <div class="card">
 <table>
 <tr><th>ESP32-S3 핀</th><th>연결 대상</th><th>비고</th></tr>
 <tr><td class="mono">5V (VIN)</td><td>ATX 9번 보라(5VSB)</td><td>상시 전원 — 파워 꺼져도 살아있음</td></tr>
 <tr><td class="mono">GND</td><td>ATX 검정(아무거나)</td><td>모든 장치 GND 공통</td></tr>
-<tr><td class="mono">3V3</td><td>OLED VCC · DS18B20 VDD · 풀업저항</td><td>3.3V 전원 레일</td></tr>
+<tr><td class="mono">3V3</td><td>OLED VCC · DS18B20 VDD(빨강선) · 풀업저항</td><td>3.3V 전원 레일</td></tr>
 <tr><td class="mono">GPIO4</td><td>릴레이 IN</td><td>active-low 모듈 기준(yaml inverted:true)</td></tr>
 <tr><td class="mono">GPIO5</td><td>ATX 8번 회색(PWR_OK)</td><td><b>10k+10k 분압 필수</b> (5V→2.5V)</td></tr>
 <tr><td class="mono">GPIO6</td><td>전원 버튼</td><td>반대쪽은 GND, 내부 풀업 사용</td></tr>
-<tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬</td></tr>
+<tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA (노랑선)</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬 — 방수 프로브 배선은 <b>6장</b></td></tr>
 <tr><td class="mono">GPIO8 / GPIO9</td><td>OLED SDA / SCL</td><td>OLED 전원은 3.3V</td></tr>
 <tr><td class="mono">GPIO10</td><td>팬 4핀-④ PWM</td><td>25kHz PWM 출력</td></tr>
 <tr><td class="mono">GPIO11</td><td>팬 4핀-③ TACH</td><td>내부 풀업, 2펄스/회전</td></tr>
@@ -236,6 +281,164 @@
 <tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작)</td></tr>
 </table>
 <div class="legend">OLED 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·OLED 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.</div>
+</div>
+
+<h2>6. DS18B20 방수 프로브 (스테인리스 관 · 3선 빨강/노랑/검정) 연결 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-08-28 추가</span></h2>
+<div class="legend" style="margin:-4px 0 12px">알리/아마존의 "DS18B20 방수 스레드 온도 프로브 스테인리스 1/2/3/5 m" 기준. 관 안에 DS18B20 칩이 에폭시로 봉해져 있고 선 3가닥만 나온다. 케이블 길이가 1 m든 5 m든 배선은 똑같다. GPU 방열판용 ①, 케이스 공기용 ② 두 개를 <b>같은 세 핀에 병렬</b>로 단다.</div>
+<div class="stop">
+<b>⛔ 시작 전 3가지</b><br>
+① <b>빨강 = 전원(3V3) · 검정 = GND · 노랑 = DATA.</b> 빨강↔검정이 바뀌면 센서가 뜨거워지고 몇 초 만에 망가질 수 있다 → 꽂기 전에 한 번 더 본다. 판매 페이지에 다른 색 표기가 있으면 그게 우선 (빨강·검정은 거의 고정, "남는 한 가닥 = DATA")<br>
+② 전원은 <b>3V3</b>에. 5V 핀 아님. 4.7 kΩ 풀업도 3V3에 건다 — DATA가 GPIO7에 직결이라 풀업을 5V에 걸면 ESP32 핀이 상한다<br>
+③ 4.7 kΩ 풀업은 <b>버스 전체에 딱 1개</b> (프로브 2개라도 1개). 캐리어·PCBA·미니 보드는 이미 보드에 있으니 <b>추가하지 않는다</b>
+</div>
+
+<h3>6-1. 선 색 → 어디에 (연결 구조)</h3>
+<div class="card">
+<svg viewBox="0 0 920 430" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="13">
+  <!-- ESP32 -->
+  <rect x="690" y="30" width="200" height="370" rx="10" fill="#eaf6ee" stroke="#7fb894" stroke-width="1.5"/>
+  <text x="790" y="56" text-anchor="middle" font-weight="bold" font-size="14">ESP32-S3 DevKit</text>
+  <text x="790" y="74" text-anchor="middle" font-size="11" fill="#5a6577">(1장 핀맵 · 왼쪽 줄)</text>
+
+  <!-- 세 줄(레일): 같은 색끼리 모으는 선 -->
+  <path d="M60,90 H704" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M60,220 H704" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M60,350 H704" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="62" y="80" fill="#a11d1d" font-weight="bold">빨강 전부 → 3V3</text>
+  <text x="62" y="210" fill="#a08508" font-weight="bold">노랑 전부 → GPIO7</text>
+  <text x="62" y="340" fill="#222" font-weight="bold">검정 전부 → GND</text>
+
+  <!-- ESP 핀 -->
+  <circle cx="704" cy="90" r="5" fill="#d0342f"/><text x="716" y="94">3V3</text><text x="716" y="108" font-size="11" fill="#5a6577">왼쪽 줄 맨 위</text>
+  <circle cx="704" cy="220" r="5" fill="#e07b00"/><text x="716" y="224">GPIO7</text><text x="716" y="238" font-size="11" fill="#5a6577">왼쪽 줄 위에서 7번째</text>
+  <circle cx="704" cy="350" r="5" fill="#222"/><text x="716" y="354">GND</text><text x="716" y="368" font-size="11" fill="#5a6577">아무 GND (맨 아래)</text>
+
+  <!-- 프로브 ① -->
+  <text x="70" y="128" font-size="12" font-weight="bold">프로브 ① GPU 방열판</text>
+  <rect x="70" y="140" width="110" height="26" rx="6" fill="#c9cfd8" stroke="#6b7686" stroke-width="1.5"/>
+  <text x="125" y="157" text-anchor="middle" font-size="11" fill="#2b3446">DS18B20</text>
+  <rect x="180" y="135" width="14" height="36" rx="2" fill="#8a94a3" stroke="#6b7686"/>
+  <path d="M194,153 H250" stroke="#444" stroke-width="6" fill="none"/>
+  <path d="M250,147 H275 V90" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M250,153 H310 V220" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M250,159 H285 V212 A8,8 0 0 1 285,228 V350" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="270" y="118" text-anchor="end" fill="#a11d1d" font-size="12">빨강</text>
+  <text x="316" y="196" fill="#a08508" font-size="12">노랑</text>
+  <text x="291" y="300" fill="#222" font-size="12">검정</text>
+
+  <!-- 프로브 ② -->
+  <text x="330" y="128" font-size="12" font-weight="bold">프로브 ② 케이스 공기</text>
+  <rect x="330" y="140" width="110" height="26" rx="6" fill="#c9cfd8" stroke="#6b7686" stroke-width="1.5"/>
+  <text x="385" y="157" text-anchor="middle" font-size="11" fill="#2b3446">DS18B20</text>
+  <rect x="440" y="135" width="14" height="36" rx="2" fill="#8a94a3" stroke="#6b7686"/>
+  <path d="M454,153 H510" stroke="#444" stroke-width="6" fill="none"/>
+  <path d="M510,147 H535 V90" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M510,153 H570 V220" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M510,159 H545 V212 A8,8 0 0 1 545,228 V350" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="530" y="118" text-anchor="end" fill="#a11d1d" font-size="12">빨강</text>
+  <text x="576" y="196" fill="#a08508" font-size="12">노랑</text>
+  <text x="551" y="300" fill="#222" font-size="12">검정</text>
+
+  <!-- 풀업 저항 -->
+  <path d="M625,90 V128" stroke="#666" stroke-width="3"/>
+  <rect x="615" y="128" width="20" height="48" fill="#fff" stroke="#666"/>
+  <path d="M625,176 V220" stroke="#666" stroke-width="3"/>
+  <text x="641" y="148" font-size="11" fill="#444">4.7 kΩ</text>
+  <text x="641" y="162" font-size="11" fill="#444">풀업 1개</text>
+
+  <!-- 접속점 -->
+  <circle cx="275" cy="90" r="4" fill="#d0342f"/><circle cx="535" cy="90" r="4" fill="#d0342f"/><circle cx="625" cy="90" r="4" fill="#d0342f"/>
+  <circle cx="310" cy="220" r="4" fill="#c9a200"/><circle cx="570" cy="220" r="4" fill="#c9a200"/><circle cx="625" cy="220" r="4" fill="#c9a200"/>
+  <circle cx="285" cy="350" r="4" fill="#222"/><circle cx="545" cy="350" r="4" fill="#222"/>
+
+  <text x="375" y="418" text-anchor="middle" font-size="12" font-weight="bold">★ 같은 색끼리 한 줄에 모은다 — 빨강→3V3 · 노랑→GPIO7 · 검정→GND · 4.7 kΩ은 노랑↔빨강 사이 1개</text>
+</svg>
+<div class="legend">
+  <span class="dot" style="background:#d0342f"></span>빨강 VDD ·
+  <span class="dot" style="background:#e8c018"></span>노랑 DATA(DQ) ·
+  <span class="dot" style="background:#222"></span>검정 GND ·
+  ● = 이어진 곳 · 검정선이 노랑 줄을 <b>넘어가는 아치(⌒)</b> = 안 이어짐(건너뜀)<br>
+  세 줄은 실제로는 "빨강 2가닥 + 저항 다리 하나를 3V3 핀에", "노랑 2가닥 + 저항 반대쪽 다리를 GPIO7 핀에", "검정 2가닥을 GND 핀에" 묶는다는 뜻. 프로브가 하나뿐이면 ②만 빼면 된다.
+</div>
+</div>
+
+<h3>6-2. 연결표</h3>
+<div class="card">
+<table>
+<tr><th style="width:130px">프로브 선</th><th>DevKit 직결 (점퍼선)</th><th>캐리어 · PCBA · 미니 보드 (T1 / T2 3핀 헤더)</th><th>비고</th></tr>
+<tr><td><span class="dot" style="background:#d0342f"></span>빨강</td><td class="mono">3V3</td><td class="mono">3V3 칸 (실크 <b>3V3</b>)</td><td>5V 아님. DevKit 왼쪽 줄 맨 위 핀</td></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑</td><td class="mono">GPIO7 + 4.7 kΩ → 3V3</td><td class="mono">가운데 칸 (실크 <b>DQ</b> 또는 <b>SIG</b>)</td><td>보드에는 4.7 k 풀업(R4/R5) 내장 → 저항 추가 금지</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정</td><td class="mono">GND</td><td class="mono">GND 칸 (실크 <b>GND</b>)</td><td>아무 GND 핀이나 같다</td></tr>
+<tr><td>프로브 ② (케이스)</td><td>①과 <b>같은 세 핀에 같은 색끼리</b> 병렬</td><td class="mono">T2 헤더 (①은 T1)</td><td>T1/T2는 보드 안에서 이미 병렬(둘 다 GPIO7)</td></tr>
+<tr><td colspan="4" style="background:#fbfcfe">
+  <b>T1 · T2 헤더 칸 순서</b> (세 보드 공통, 실크 인쇄대로):
+  <span class="mono" style="display:inline-block;margin-left:6px;border:1px solid #c3ccdb;border-radius:6px;overflow:hidden;vertical-align:middle">
+    <span style="display:inline-block;padding:3px 12px;background:#222;color:#fff">GND ← 검정</span><span style="display:inline-block;padding:3px 12px;background:#e8c018;color:#333">DQ ← 노랑</span><span style="display:inline-block;padding:3px 12px;background:#d0342f;color:#fff">3V3 ← 빨강</span>
+  </span>
+  &nbsp;— 3핀 듀폰 암 하우징에 검정·노랑·빨강 순서로 끼워두면 그대로 꽂힌다 (거꾸로 꽂으면 빨강↔검정이 뒤집히니 실크 확인)
+</td></tr>
+</table>
+<div class="warn" style="margin-bottom:0">
+<b>DevKit 직결일 때 4.7 kΩ 다는 법</b> — 1/4 W 4.7 kΩ 저항 한 개. 한쪽 다리는 <b>3V3</b>, 반대쪽 다리는 <b>GPIO7</b>. 제일 간단한 건 암-암 점퍼선 하우징에 프로브 노랑선과 저항 다리를 <b>같이</b> 끼워 GPIO7에 꽂고, 저항 반대 다리를 빨강선과 같이 3V3에 꽂는 것. 길게 쓸 거면 작은 만능기판이나 3핀 커넥터로 정리.<br>
+<b>ESP32 내부 풀업(약 45 kΩ)으로는 대체 불가</b> — 너무 약해서 1 m만 넘어도 못 읽는다. 빨강을 검정과 같이 GND에 묶는 "2선 기생전원" 방식도 쓰지 않는다 (yaml은 3선 정상 전원 기준·긴 케이블에서 불안정).
+</div>
+</div>
+
+<h3>6-3. 프로브 주소를 yaml에 넣기 (2개 쓸 때 필수)</h3>
+<div class="card">
+<table>
+<tr><th style="width:36px">#</th><th>할 일</th><th style="width:38%">확인 기준</th></tr>
+<tr><td>0</td><td><b>프로브가 하나뿐이면 건너뛴다.</b> yaml의 <span class="mono">address: 0x0000000000000000</span>은 "버스에 하나뿐이면 그걸 자동 선택"이라 손댈 게 없다. GPU·케이스 두 항목이 <b>같은 프로브</b>를 가리켜 같은 값이 뜨는데 정상. 팬 커브·과열 경고는 <b>GPU 온도</b> 기준이니 하나만 달 거면 GPU 방열판에</td><td>부팅 후 "GPU 온도"가 실온 근처</td></tr>
+<tr><td>1</td><td><b>둘 다 꽂고</b> USB 연결 → <span class="mono">esphome run bc250-front.yaml</span> (이미 올려뒀으면 <span class="mono">esphome logs bc250-front.yaml</span>). 부팅 로그에서 <span class="mono">Found devices:</span> 아래 두 줄을 복사<br>
+<pre style="background:#f4f6f9;border:1px solid #dde3ec;border-radius:8px;padding:8px 12px;margin:8px 0 0;font-size:.78rem;line-height:1.5;overflow-x:auto">[C][gpio.one_wire]: GPIO 1-wire bus:
+[C][gpio.one_wire]:   Pin: GPIO7
+[C][gpio.one_wire]:   Found devices:
+[C][gpio.one_wire]:     0x1c0000031edd2a28 (DS18B20)   ← 예시
+[C][gpio.one_wire]:     0x7a00000c3b41ee28 (DS18B20)   ← 예시</pre></td>
+<td>DS18B20 주소는 항상 <span class="mono">…28</span>로 끝남. 두 줄이 안 보이면 6-5</td></tr>
+<tr><td>2</td><td>yaml의 <span class="mono">sensor:</span> 아래 두 자리에 넣고 다시 <span class="mono">esphome run</span>
+<pre style="background:#f4f6f9;border:1px solid #dde3ec;border-radius:8px;padding:8px 12px;margin:8px 0 0;font-size:.78rem;line-height:1.5;overflow-x:auto">  - platform: dallas_temp
+    id: gpu_temp
+    name: "GPU 온도"
+    address: 0x1c0000031edd2a28   # ← 1번에서 복사한 주소
+    update_interval: 5s
+  - platform: dallas_temp
+    id: case_temp
+    name: "케이스 온도"
+    address: 0x7a00000c3b41ee28   # ← 나머지 하나
+    update_interval: 10s</pre></td>
+<td>주소 2개가 서로 다르고 둘 다 <span class="mono">0x</span>로 시작</td></tr>
+<tr><td>3</td><td><b>어느 게 어느 건지 확인.</b> GPU에 붙일 프로브를 손으로 꼭 쥐고 30초 → 대시보드(<span class="mono">http://bc250-front.local</span>)나 로그에서 <b>"GPU 온도"</b>가 올라가면 OK. <b>"케이스 온도"</b>가 올라가면 yaml의 두 주소를 맞바꾸고 다시 올린다</td><td>쥔 프로브 쪽 항목만 2~5 °C 상승 (방수관이라 느림)</td></tr>
+<tr><td>4</td><td>프로브에 라벨(GPU / CASE)을 붙여둔다 — 나중에 케이블 정리할 때 헷갈리지 않게</td><td>—</td></tr>
+</table>
+<div class="legend">주소가 <span class="mono">0x0000000000000000</span>인 채로 프로브 2개를 꽂으면 로그에 <span class="mono">More than one device, can't auto-select address</span>가 뜨고 둘 다 값이 안 나온다 — 고장이 아니라 주소를 넣으라는 뜻.</div>
+</div>
+
+<h3>6-4. 어디에 어떻게 붙이나</h3>
+<div class="card">
+<table>
+<tr><th style="width:130px">프로브</th><th>위치</th><th>고정</th></tr>
+<tr><td><b>① GPU</b></td><td>GPU 방열판 <b>핀 사이</b> 또는 <b>히트파이프</b>에 관이 금속에 닿게. 팬 날개·팬 흡기 바로 앞은 피한다</td><td>케이블타이로 밀착 + 관과 금속 사이에 써멀패드/써멀구리스 소량. 케이블은 팬을 안 지나가게 빼서 케이스 안쪽으로</td></tr>
+<tr><td><b>② 케이스</b></td><td>흡기 쪽 <b>공기 중</b>에 매달기 — 방열판·PSU·금속 판에 닿지 않게</td><td>케이블타이 한 개로 케이스 프레임에 늘어뜨린다</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe">
+<b>읽는 값의 의미</b> — 스테인리스 관은 <b>방열판 표면</b> 온도라 OS가 보여주는 GPU 다이 온도보다 <b>낮게</b> 나온다. 방수 에폭시 때문에 반응도 수십 초 느리다(정상). 부팅 후 OS 온도와 한 번 비교해서 5장 설정 메뉴의 <b>팬 커브 시작 온도·과열 경고</b>를 이 값 기준으로 낮춰 잡을 것.<br>
+<b>케이블 5 m</b>도 4.7 kΩ이면 보통 읽힌다. 읽기 실패가 잦으면 PSU·팬 전원선과 나란히 묶인 구간을 떼어 놓고, 그래도 안 되면 풀업을 <b>3.3 kΩ(또는 2.2 kΩ)</b>로 낮춘다. 남는 케이블은 둘둘 말지 말고 지그재그로 접어 묶는다.
+</td></tr>
+</table>
+</div>
+
+<h3>6-5. 안 될 때</h3>
+<div class="card">
+<table>
+<tr><th style="width:270px">증상</th><th>원인</th><th>조치</th></tr>
+<tr><td>로그에 <span class="mono">Found no devices!</span> / 온도 항목 "알 수 없음"</td><td>노랑이 GPIO7에 안 갔거나 4.7 k 풀업 없음, 빨강이 3V3에 안 감</td><td>노랑↔GPIO7, 저항 양쪽(3V3·GPIO7), 빨강↔3V3 순서로 통전 확인. 전원 끈 상태에서 멀티미터로 GPIO7↔3V3 사이 <b>4~5 kΩ 근처</b>가 나와야 함</td></tr>
+<tr><td>딱 <b>85.0 °C</b>로 고정</td><td>DS18B20 초기값 = 전원이 불안정해 측정이 안 됨</td><td>빨강이 3V3에 확실히 닿는지, 접촉 불량(듀폰 헐거움) 확인</td></tr>
+<tr><td><b>프로브가 뜨거워짐</b> / 인식 안 됨</td><td>빨강↔검정 반대</td><td><b>즉시 분리.</b> 식힌 뒤 바르게 꽂아 다시 시도 — 오래 뒀으면 센서 사망</td></tr>
+<tr><td>가끔 <span class="mono">reading scratch pad failed</span> / 값 튐</td><td>긴 케이블 + 노이즈, 풀업 약함</td><td>PSU·팬 케이블과 떨어뜨리기 → 풀업 3.3 k/2.2 k → 케이블 짧은 것으로</td></tr>
+<tr><td><span class="mono">More than one device, can't auto-select</span></td><td>프로브 2개인데 주소가 0</td><td>6-3대로 주소 입력</td></tr>
+<tr><td><span class="mono">1-wire bus is held low</span></td><td>노랑이 GND에 닿음(단락) 또는 프로브 고장</td><td>프로브 하나씩 빼 보며 어느 쪽인지 찾기</td></tr>
+<tr><td>디스플레이 온도 자리에 <b>--</b>만 뜸</td><td>위 항목 중 하나</td><td>로그부터 본다 (<span class="mono">esphome logs bc250-front.yaml</span>). 온도가 없어도 나머지 기능은 정상 동작</td></tr>
+</table>
 </div>
 
 <footer>BC250 Front Controller · ESPHome bc250-front.yaml 기준 · 2026-08-21</footer>
