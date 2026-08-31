@@ -26,6 +26,9 @@
 #    평상시엔 PC 케이블을 빼고, 로그가 필요하면 UART(CH343) 포트를 쓸 것.
 #  · 전원 버튼 강제 종료: 5초 → 3초 (누르고 있으면 3초 되는 순간 실행, 놓는 타이밍 무관)
 #  · 메뉴 버튼 C(GPIO14) 추가: 이전 항목 / 값 내리기. A·C 길게 누르면 0.2초마다 자동 반복
+#  · 보안: API 암호화 키·OTA 비밀번호·웹 로그인 → secrets.yaml (secrets.yaml.example 참고, git 미포함)
+#  · 과열 위험(경고 온도 +10°C 가 60초 지속) → 자동 정상 종료, 실패하면 강제 전원 컷
+#  · 백라이트 자동 어둡게: 서버 꺼짐 / 밤 시간(SNTP 시계 맞을 때만). 버튼 누르면 30초간 원래 밝기
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -50,6 +53,13 @@ substitutions:
   # 로그 출력 UART — DevKitC-1(CH343 USB-시리얼)은 UART0,
   # PCBA 보드(hardware/bc250-front-pcba, 네이티브 USB-C)는 USB_SERIAL_JTAG
   log_uart: UART0
+  # 백라이트 자동 어둡게 — 아래 interval 의 백라이트 람다에서 사용
+  off_brightness: "10"      # 서버 꺼져 있을 때 밝기 %
+  night_start: "23"         # 밤 시작 시(時) — 이 시각 이후
+  night_end: "7"            # 밤 끝 시(時) — 이 시각 전까지
+  night_brightness: "30"    # 밤 밝기 %
+  # 과열 위험 마진 — 과열 경고 온도 + 이 값(°C) 이 60초 지속되면 자동 정상 종료
+  critical_margin: "10"
 
 esphome:
   name: bc250-front
@@ -83,10 +93,16 @@ logger:
   hardware_uart: ${log_uart}   # DevKit=UART0 / PCBA=USB_SERIAL_JTAG (substitutions 참고)
 api:            # HA 직결 (자동 발견·이벤트·서비스)
   reboot_timeout: 0s
+  encryption:
+    key: !secret api_key          # HA에서 기기 추가할 때 입력 (secrets.yaml)
 ota:
   platform: esphome
+  password: !secret ota_password  # WiFi OTA 업로드 비밀번호 (esphome upload 가 자동으로 사용)
 web_server:
   version: 3
+  auth:
+    username: admin
+    password: !secret web_password   # 웹 대시보드 로그인
 
 # MQTT가 필요하면 주석 해제
 # mqtt:
@@ -94,10 +110,16 @@ web_server:
 
 wifi:
   reboot_timeout: 0s   # WiFi 끊겨도 재부팅 금지 — 로컬 제어는 계속 동작
+  power_save_mode: none   # 상시 전원이라 절전 불필요 — 웹/HA 응답 지연 방지
   ap:
     ssid: "bc250-front-setup"
 captive_portal:
 improv_serial:
+
+time:
+  - platform: sntp          # 밤 시간 백라이트 판정용 — 인터넷 안 되면 그냥 밤 판정을 건너뜀
+    id: sntp_time
+    timezone: Asia/Seoul
 
 # ─── SPI 버스 (ST7789V 디스플레이) ─────────────────────────
 # ST7789V는 쓰기 전용(MOSI만)이라 miso 불필요.
@@ -113,22 +135,47 @@ globals:
   - id: shutting_down
     type: bool
     initial_value: "false"
+  - id: shutdown_http_ok        # 직전 종료 요청(HTTP)이 2xx로 성공했는지
+    type: bool
+    initial_value: "false"
+  - id: last_input              # 마지막 버튼 조작 시각(millis) — 백라이트 자동 어둡게 해제용
+    type: uint32_t
+    initial_value: "0"
 
 http_request:
   timeout: 5s
   verify_ssl: false
 
 # 정상 종료 시퀀스 — ESP32가 주체. HA 없이도 완결된다.
+# OS에 종료 요청(HTTP POST)이 성공(2xx)했을 때만 대기 후 전원을 끊는다. 요청이 실패하면(OS 에이전트
+# 없음·네트워크 불통·오류 응답) 살아있는 OS의 전원을 끊지 않고 유지 + LED 빨강 — 그래도 꺼야 하면
+# 전원 버튼 3초(강제 컷). 이미 꺼져 있으면 아무것도 하지 않는다.  (2026-08-31 변경)
 script:
   - id: graceful_shutdown
     mode: single
     then:
-      - globals.set: {id: shutting_down, value: "true"}
-      - http_request.post:
-          url: ${bc250_shutdown_url}
-      - delay: !lambda "return (uint32_t) id(shutdown_wait).state * 1000;"
-      - switch.turn_off: server_power
-      - globals.set: {id: shutting_down, value: "false"}
+      - if:
+          condition: {switch.is_on: server_power}
+          then:
+            - globals.set: {id: shutting_down, value: "true"}
+            - globals.set: {id: shutdown_http_ok, value: "false"}
+            - http_request.post:
+                url: ${bc250_shutdown_url}
+                on_response:
+                  then:
+                    - lambda: 'id(shutdown_http_ok) = response->status_code >= 200 && response->status_code < 300;'
+                on_error:
+                  then:
+                    - logger.log: {level: WARN, format: "종료 요청 연결 실패: ${bc250_shutdown_url}"}
+            - if:
+                condition: {lambda: 'return id(shutdown_http_ok);'}
+                then:
+                  - delay: !lambda "return (uint32_t) id(shutdown_wait).state * 1000;"
+                  - switch.turn_off: server_power
+                else:
+                  - logger.log: {level: WARN, format: "종료 요청 실패 — 전원 유지 (강제 종료는 전원 버튼 3초)"}
+                  - light.turn_on: {id: status_led, red: 100%, green: 0%, blue: 0%, brightness: 40%}
+            - globals.set: {id: shutting_down, value: "false"}
 
   # 메뉴 버튼 A/C 길게 누르기: 0.6초 후부터 0.2초마다 한 칸씩 자동 반복 (놓으면 즉시 중단)
   - id: hold_next
@@ -149,6 +196,24 @@ script:
           then:
             - display_menu.up: settings_menu
             - delay: 200ms
+  # 과열 위험: 정상 종료를 시도하고, 그래도 켜져 있으면(종료 요청 실패) 강제 전원 컷
+  - id: overheat_shutdown
+    mode: single
+    then:
+      - logger.log: {level: ERROR, format: "과열 위험: GPU %.1f°C — 자동 정상 종료 시도", args: ['id(gpu_temp).state']}
+      - script.execute: graceful_shutdown
+      - script.wait: graceful_shutdown
+      - if:
+          condition: {switch.is_on: server_power}
+          then:
+            - logger.log: {level: ERROR, format: "과열 위험: 정상 종료 실패 — 강제 전원 컷"}
+            - switch.turn_off: server_power
+  # 메뉴 열린 채 30초 동안 버튼 조작이 없으면 자동으로 닫기 (화면 자동 순환 복귀)
+  - id: menu_timeout
+    mode: restart
+    then:
+      - delay: 30s
+      - display_menu.hide: settings_menu
 
 button:
   - platform: template
@@ -204,7 +269,7 @@ number:
     name: "과열 경고 온도 C"
     min_value: 70
     max_value: 95
-    step: 1
+    step: 5                 # 5°C 단위 (70·75·80·85·90·95) — 2026-08-31 1→5
     initial_value: 85
     restore_value: true
     optimistic: true
@@ -241,6 +306,9 @@ binary_sensor:
   - platform: gpio
     id: power_button
     pin: {number: GPIO6, mode: {input: true, pullup: true}, inverted: true}
+    filters: [delayed_on_off: 30ms]   # 긴 배선 노이즈·채터링으로 인한 오동작 방지
+    on_press:
+      - lambda: 'id(last_input) = millis();'
     on_multi_click:
       # 짧게: 꺼져 있으면 켬 / 켜져 있으면 ESP32가 직접 정상 종료 수행
       - timing: [ON for at most 1s]
@@ -268,6 +336,8 @@ binary_sensor:
             then: [display_menu.down: settings_menu]
             else: [display_menu.show: settings_menu]
     on_press:
+      - lambda: 'id(last_input) = millis();'
+      - script.execute: menu_timeout
       - if:
           condition: {display_menu.is_active: settings_menu}
           then: [script.execute: hold_next]
@@ -287,6 +357,8 @@ binary_sensor:
             then: [display_menu.up: settings_menu]
             else: [display_menu.show: settings_menu]
     on_press:
+      - lambda: 'id(last_input) = millis();'
+      - script.execute: menu_timeout
       - if:
           condition: {display_menu.is_active: settings_menu}
           then: [script.execute: hold_prev]
@@ -297,6 +369,9 @@ binary_sensor:
     id: btn_sel
     pin: {number: GPIO13, mode: {input: true, pullup: true}, inverted: true}
     filters: [delayed_on_off: 20ms]
+    on_press:
+      - lambda: 'id(last_input) = millis();'
+      - script.execute: menu_timeout
     on_multi_click:
       - timing: [ON for at most 0.6s]
         then:
@@ -326,6 +401,17 @@ binary_sensor:
     name: "과열"
     device_class: heat
     lambda: 'return id(gpu_temp).state > id(overheat_temp).state;'
+
+  - platform: template        # 과열 경고 온도 + critical_margin 이 60초 지속 → 자동 종료
+    id: overheat_critical
+    name: "과열 위험"
+    device_class: problem
+    lambda: 'return !isnan(id(gpu_temp).state) && id(gpu_temp).state >= id(overheat_temp).state + ${critical_margin};'
+    filters: [delayed_on: 60s]
+    on_press:
+      - if:
+          condition: {switch.is_on: server_power}
+          then: [script.execute: overheat_shutdown]
 
 # ─── 센서 ───────────────────────────────────
 sensor:
@@ -391,8 +477,27 @@ fan:
 interval:
   - interval: 5s
     then:
-      # 백라이트 밝기를 number 값과 동기화 (부팅 직후 복원값 반영)
-      - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
+      # 백라이트: 기본은 설정 밝기. 서버 꺼짐 → ${off_brightness}%, 밤(${night_start}~${night_end}시, 시계 맞을 때만) → ${night_brightness}%.
+      # 메뉴가 열려 있거나 버튼을 누른 지 30초 안이면 항상 설정 밝기.
+      - lambda: |-
+          float level = id(display_brightness).state / 100.0f;
+          bool awake = id(settings_menu).is_active() || (millis() - id(last_input)) < 30000;
+          if (!awake) {
+            float cap = 1.0f;
+            if (!id(server_power).state) {
+              cap = ${off_brightness} / 100.0f;
+            } else {
+              auto now = id(sntp_time).now();
+              if (now.is_valid()) {
+                int h = now.hour;
+                bool night = (${night_start} > ${night_end}) ? (h >= ${night_start} || h < ${night_end})
+                                                             : (h >= ${night_start} && h < ${night_end});
+                if (night) cap = ${night_brightness} / 100.0f;
+              }
+            }
+            if (cap < level) level = cap;
+          }
+          id(backlight_pwm).set_level(level);
       - lambda: |-
           // fan_mode 옵션: 0=자동, 1=수동 (active_index는 버전 무관하게 동일 API)
           if (id(fan_mode).active_index().value_or(0) == 1) {
@@ -402,21 +507,25 @@ interval:
             return;
           }
           float t = id(gpu_temp).state;
-          if (isnan(t)) return;
           float pct;
-          if      (t >= id(overheat_temp).state) pct = 100;
-          else if (t >= 80) pct = 100;
-          else if (t >= 70) pct = 70  + (t-70)*3.0;
-          else if (t >= 60) pct = 50  + (t-60)*2.0;
-          else if (t >= 50) pct = 35  + (t-50)*1.5;
-          else if (t >= 40) pct = 20  + (t-40)*1.5;
-          else              pct = 20;
-          // fan_preset 옵션: 0=조용히, 1=표준, 2=성능
-          auto preset_idx = id(fan_preset).active_index().value_or(1);
-          if (preset_idx == 0)      pct -= 10;
-          else if (preset_idx == 2) pct += 15;
-          if (pct < 10)  pct = 10;
-          if (pct > 100) pct = 100;
+          if (isnan(t)) {
+            // 온도 센서 없음/고장: 팬이 꺼진 채 서버가 도는 일이 없도록 60% 고정 (2026-08-31)
+            pct = 60;
+          } else {
+            if      (t >= id(overheat_temp).state) pct = 100;
+            else if (t >= 80) pct = 100;
+            else if (t >= 70) pct = 70  + (t-70)*3.0;
+            else if (t >= 60) pct = 50  + (t-60)*2.0;
+            else if (t >= 50) pct = 35  + (t-50)*1.5;
+            else if (t >= 40) pct = 20  + (t-40)*1.5;
+            else              pct = 20;
+            // fan_preset 옵션: 0=조용히, 1=표준, 2=성능
+            auto preset_idx = id(fan_preset).active_index().value_or(1);
+            if (preset_idx == 0)      pct -= 10;
+            else if (preset_idx == 2) pct += 15;
+            if (pct < 10)  pct = 10;
+            if (pct > 100) pct = 100;
+          }
           auto call = id(the_fan).turn_on();
           call.set_speed((int)pct);
           call.perform();
@@ -556,7 +665,11 @@ display:
           it.print(18, 178, id(f_20), Color(255, 255, 255), id(ip_addr).state.c_str());
 
           it.print(18, 226, id(f_20), Color(150, 160, 180), "SIGNAL");
-          it.printf(18, 252, id(f_20), Color(255, 255, 255), "%d dBm", (int) id(wifi_rssi).state);
+          if (isnan(id(wifi_rssi).state)) {
+            it.print(18, 252, id(f_20), Color(255, 255, 255), "--");
+          } else {
+            it.printf(18, 252, id(f_20), Color(255, 255, 255), "%d dBm", (int) id(wifi_rssi).state);
+          }
 
 # ─── 로컬 설정 메뉴 (버튼 3개로 조작: A 다음/+ · C 이전/− · B 선택) ───────────
 graphical_display_menu:
@@ -573,18 +686,22 @@ graphical_display_menu:
       select: fan_mode
     - type: number
       text: "수동 팬 %"
+      format: "%.0f"
       number: manual_speed
     - type: select
       text: "팬 프리셋"
       select: fan_preset
     - type: number
       text: "화면 밝기"
+      format: "%.0f"
       number: display_brightness
     - type: number
       text: "과열 경고 C"
+      format: "%.0f"
       number: overheat_temp
     - type: number
       text: "종료 대기 s"
+      format: "%.0f"
       number: shutdown_wait
     - type: command
       text: "컨트롤러 재부팅"

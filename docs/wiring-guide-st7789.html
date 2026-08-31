@@ -283,7 +283,7 @@
 <table>
 <tr><th colspan="3">🔘 버튼 조작</th></tr>
 <tr><th>버튼</th><th>동작</th><th>결과</th></tr>
-<tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷)</td></tr>
+<tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷). <b>종료 명령이 실패하면(OS 에이전트 없음·네트워크 불통) 전원을 끊지 않고 유지</b> + LED 빨강 — 그때는 아래 3초 강제 컷을 쓴다</td></tr>
 <tr><td><b>3초</b> 누르고 있기</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만). 3초 되는 <b>순간</b> 바로 꺼지므로 놓는 타이밍은 상관없음 — 2026-08-31에 5초→3초로 변경</td></tr>
 <tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 열기 / <b>다음</b> 항목으로 이동 / 값 변경 중엔 <b>값 올리기(＋)</b></td></tr>
 <tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 ＋) — 놓으면 멈춤</td></tr>
@@ -292,17 +292,17 @@
 <tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td>메뉴 열기 / 항목 선택 → 값 변경 모드 진입 / 한 번 더 누르면 <b>확정</b></td></tr>
 <tr><td>길게(1.2초)</td><td>메뉴 닫기</td></tr>
 </table>
-<div class="legend">값 바꾸는 순서: <b>A·C로 항목 찾기 → B(변경 모드, 항목 양옆에 표시) → A(＋)·C(−)로 값 조절 → B(확정)</b>. 예전엔 A를 길게 눌러 되돌아갔지만 2026-08-31부터 C 버튼이 그 역할 — A 길게는 자동 반복이다.</div>
+<div class="legend">값 바꾸는 순서: <b>A·C로 항목 찾기 → B(변경 모드, 항목 양옆에 표시) → A(＋)·C(−)로 값 조절 → B(확정)</b>. 예전엔 A를 길게 눌러 되돌아갔지만 2026-08-31부터 C 버튼이 그 역할 — A 길게는 자동 반복이다. 메뉴는 <b>30초 동안 버튼 조작이 없으면 자동으로 닫힌다.</b></div>
 <br>
 <table>
 <tr><th colspan="2">🎛️ 설정 메뉴 항목 (변경값은 플래시에 저장 — 재부팅에도 유지)</th></tr>
-<tr><td class="mono">팬 모드</td><td>자동(온도 커브) / 수동</td></tr>
+<tr><td class="mono">팬 모드</td><td>자동(온도 커브) / 수동. 자동인데 GPU 온도가 안 읽히면(센서 미배선·고장) <b>60% 고정</b>으로 돈다</td></tr>
 <tr><td class="mono">수동 팬 %</td><td>수동 모드일 때 팬 속도 (0~100%)</td></tr>
 <tr><td class="mono">팬 프리셋</td><td>조용히(−10%p) / 표준 / 성능(+15%p) — 자동 커브에 가감</td></tr>
-<tr><td class="mono">화면 밝기</td><td>10~100% — ST7789 백라이트 PWM 밝기</td></tr>
-<tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C)</td></tr>
+<tr><td class="mono">화면 밝기</td><td>10~100% — ST7789 백라이트 PWM 밝기. <b>자동 어둡게</b>: 서버 꺼짐 → 10%, 밤 23~07시(인터넷 시계가 맞을 때만) → 30%, 아무 버튼이나 누르면 30초간 원래 밝기 (값은 yaml <span class="mono">off_brightness / night_start / night_end / night_brightness</span>)</td></tr>
+<tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C, <b>5°C 단위</b>). 여기서 <b>+10°C가 60초 지속되면 자동 정상 종료</b>, 종료 요청이 실패하면 강제 전원 컷 (마진은 yaml <span class="mono">critical_margin</span>)</td></tr>
 <tr><td class="mono">종료 대기 s</td><td>정상 종료 시 OS가 꺼질 때까지 기다리는 시간 (30~180초)</td></tr>
-<tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — <b>서버 전원은 유지됨</b> (NC 배선 덕분)</td></tr>
+<tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — 서버가 <b>켜져 있으면 전원 유지</b> (NC 배선 덕분). 서버가 <b>꺼져 있을 때</b>는 재부팅 중 릴레이 입력이 잠깐 풀리며 PSU가 약 1초 켜졌다 꺼질 수 있음(정상, 무해)</td></tr>
 </table>
 <br>
 <table>
@@ -310,7 +310,7 @@
 <tr><td>꺼짐</td><td>서버 전원 꺼짐</td></tr>
 <tr><td>🟢 초록</td><td>정상 동작</td></tr>
 <tr><td>🟡 노랑</td><td>정상 종료 진행 중</td></tr>
-<tr><td>🔴 빨강</td><td>팬 고장 또는 과열</td></tr>
+<tr><td>🔴 빨강</td><td>팬 고장 또는 과열 · 정상 종료 요청이 실패했을 때도 몇 초간 빨강(전원은 유지됨)</td></tr>
 </table>
 <br>
 <table>
@@ -318,8 +318,9 @@
 <tr><td>1</td><td>첫 부팅(또는 WiFi 실패 1분 후) ESP가 <b>bc250-front-setup</b> AP를 엶 (비밀번호 없음)</td></tr>
 <tr><td>2</td><td>폰으로 접속 → 자동으로 설정 페이지 열림 (안 열리면 브라우저에서 <span class="mono">192.168.4.1</span>)</td></tr>
 <tr><td>3</td><td>집 WiFi 선택 + 비밀번호 입력 → 저장 후 자동 접속</td></tr>
-<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능</td></tr>
-<tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작)</td></tr>
+<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능. <b>로그인: admin / <span class="mono">secrets.yaml</span>의 web_password</b></td></tr>
+<tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작). 추가할 때 <b><span class="mono">secrets.yaml</span>의 api_key</b>를 물어봄</td></tr>
+<tr><td>6</td><td><b>비밀번호 파일</b> — 키·비밀번호(API 키, OTA 비밀번호, 웹 로그인)는 전부 <span class="mono">secrets.yaml</span>에 있고 git에는 올라가지 않는다(<span class="mono">secrets.yaml.example</span> 참고). 파일을 잃어버리면 새로 만들고 USB로 다시 플래시하면 됨. 2026-08-31 적용</td></tr>
 </table>
 <div class="legend">디스플레이 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·디스플레이 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.<br>
 <b>5V 투입 직후 화면은 약 2초 동안 꺼져 있다가 켜진다 — 정상.</b> LCD 전원이 안정될 때까지 초기화를 미루는 것 (8장 참고).</div>
