@@ -7,3 +7,7 @@ secrets.yaml
 hardware/tools/build/
 hardware/tools/*.jar
 __pycache__/
+
+# KiCad/편집기 로컬 히스토리(내장 git 저장소) 및 빈 Untitled 프로젝트
+.history/
+hardware/**/Untitled/
