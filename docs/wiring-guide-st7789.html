@@ -37,13 +37,32 @@
   .lb.r { justify-content:flex-start; padding-left:9px; }
   .lb.u { color:#1a2230; font-weight:600; }
   .lb .no { color:#b45309; font-weight:400; font-size:.73rem; }
+
+  /* ── (옵션) J2000·J2001 보조 전원 ── */
+  h3 { font-size:1rem; margin:24px 0 10px; color:#2b3446; }
+  .stop { background:#fdeeee; border:1px solid #d48f8f; border-radius:12px; padding:14px 16px; margin:14px 0; }
+  .stop b { color:#a11d1d; }
+  .two { display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start; }
+  .mfcap { font-weight:700; margin-bottom:8px; }
+  .mf { display:grid; grid-template-columns:repeat(4,74px); gap:4px; }
+  .mf div { border-radius:6px; text-align:center; font-size:.76rem; padding:8px 2px; color:#fff; font-family:ui-monospace,Menlo,monospace; border:1px solid rgba(0,0,0,.2); line-height:1.25; }
+  .mf .v12 { background:#e8c018; color:#333; }
+  .mf .gnd { background:#222; }
+  .mf .ban { background:#d0342f; }
+  .mf .use { outline:3px solid #0a5c2b; outline-offset:-1px; font-weight:700; }
+  .mf .ext { opacity:.45; border-style:dashed; border-color:#555; }
+  .mf .bar { grid-column:1 / 5; background:#2b3446; color:#cbd5e6; border-radius:0 0 10px 10px; padding:5px 4px; font-size:.72rem; font-weight:700; }
+  .mf .bar.top { border-radius:10px 10px 0 0; color:#8b98b0; font-weight:400; }
+  .mf small { display:block; font-size:.62rem; opacity:.85; font-weight:400; }
+  .src { font-size:.78rem; color:#8b96a8; margin-top:6px; line-height:1.8; }
+  .src a { color:#3b6fd4; text-decoration:none; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <h1>⚡ BC250 전면 컨트롤러 배선도 <span style="font-size:1rem;color:#3b6fd4">(ST7789V 2.4인치 SPI 에디션)</span></h1>
-<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front-st7789.yaml과 1:1 대응)</div>
+<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front-st7789.yaml과 1:1 대응) · 6장 J2000/J2001 보조 전원은 2026-08-26 추가 · 7장 DS18B20 방수 프로브는 2026-08-28 추가</div>
 
 <div class="warn">
 <b>⚠ 시작 전 3가지</b><br>
@@ -82,7 +101,7 @@
   <div class="lb l u">릴레이 IN →</div><div class="pin u" style="background:#2f6fd0">4</div><div class="body"></div><div class="pin">1</div><div class="lb r">빈 핀</div>
   <div class="lb l u">PWR_OK 분압점 (10k+10k) →</div><div class="pin u" style="background:#5b6472">5</div><div class="body"></div><div class="pin">2</div><div class="lb r">빈 핀</div>
   <div class="lb l u">전원 버튼 (반대쪽 GND) →</div><div class="pin u" style="background:#1d6fb8">6</div><div class="body"></div><div class="pin">42</div><div class="lb r">빈 핀</div>
-  <div class="lb l u">DS18B20 DATA (4.7k→3.3V) →</div><div class="pin u" style="background:#e07b00">7</div><div class="body"></div><div class="pin">41</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">DS18B20 DATA 노랑 (4.7k→3.3V, 7장) →</div><div class="pin u" style="background:#e07b00">7</div><div class="body"></div><div class="pin">41</div><div class="lb r">빈 핀</div>
   <div class="lb l u">ST7789 DC (A0/RS) →</div><div class="pin u" style="background:#db2777">15</div><div class="body"></div><div class="pin">40</div><div class="lb r">빈 핀</div>
   <div class="lb l u">ST7789 RST →</div><div class="pin u" style="background:#ea580c">16</div><div class="body"></div><div class="pin">39</div><div class="lb r">빈 핀</div>
   <div class="lb l u">ST7789 CS →</div><div class="pin u" style="background:#0891b2">17</div><div class="body"></div><div class="pin">38</div><div class="lb r">빈 핀</div>
@@ -93,9 +112,9 @@
   <div class="lb l u">ST7789 SCLK →</div><div class="pin u" style="background:#8556d6">9</div><div class="body"></div><div class="pin">45</div><div class="lb r"><span class="no">⛔ 스트래핑 — 비워둘 것</span></div>
   <div class="lb l u">팬 PWM (4핀-④) →</div><div class="pin u" style="background:#1d6fb8">10</div><div class="body"></div><div class="pin u" style="background:#c23fa4">48</div><div class="lb r u">WS2812 LED (보드 내장 — 외장이면 여기)</div>
   <div class="lb l u">팬 TACH (4핀-③) →</div><div class="pin u" style="background:#5f8f0b">11</div><div class="body"></div><div class="pin">47</div><div class="lb r">빈 핀</div>
-  <div class="lb l u">메뉴 버튼A 이동 (반대쪽 GND) →</div><div class="pin u" style="background:#0e7490">12</div><div class="body"></div><div class="pin">21</div><div class="lb r">빈 핀</div>
+  <div class="lb l u">메뉴 버튼A 다음·＋ (반대쪽 GND) →</div><div class="pin u" style="background:#0e7490">12</div><div class="body"></div><div class="pin">21</div><div class="lb r">빈 핀</div>
   <div class="lb l u">메뉴 버튼B 선택 (반대쪽 GND) →</div><div class="pin u" style="background:#0e7490">13</div><div class="body"></div><div class="pin">20</div><div class="lb r">빈 핀 (USB D+)</div>
-  <div class="lb l">빈 핀</div><div class="pin">14</div><div class="body"></div><div class="pin">19</div><div class="lb r">빈 핀 (USB D−)</div>
+  <div class="lb l u">메뉴 버튼C 이전·− (반대쪽 GND) → <span class="no">2026-08-31 추가</span></div><div class="pin u" style="background:#0e7490">14</div><div class="body"></div><div class="pin">19</div><div class="lb r">빈 핀 (USB D−)</div>
   <div class="lb l u">ATX 9번 보라 5VSB →</div><div class="pin u" style="background:#7b3ff2">5V</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
   <div class="lb l u">ATX 검정 (공통 그라운드) →</div><div class="pin u" style="background:#222">GND</div><div class="body"></div><div class="pin">GND</div><div class="lb r">GND 여분</div>
 
@@ -192,17 +211,57 @@
   </div>
 </div>
 
+<div class="card">
+  <div style="font-weight:700;margin-bottom:10px">쓰는 선만 색칠 — 24가닥 중 <b>5가닥</b>만 건드린다</div>
+  <div class="atx" style="margin-bottom:14px">
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">13</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">14</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">15</div>
+    <div style="background:#1db954;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">16<br>PS_ON</div>
+    <div style="background:#222;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">17<br>GND</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">18</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">19</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">20</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">21</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">22</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">23</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">24</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">1</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">2</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">3</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">4</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">5</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">6</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">7</div>
+    <div style="background:#9aa0a6;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">8<br>PWR_OK</div>
+    <div style="background:#7b3ff2;color:#fff;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">9<br>5VSB</div>
+    <div style="background:#e8c018;color:#333;outline:3px solid rgba(0,0,0,.35);font-weight:700;padding:6px 0">10<br>12V</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">11</div>
+    <div style="background:#e6eaf0;color:#9aa3b0;border-color:#d5dbe4">12</div>
+  </div>
+  <table>
+    <tr><th>선 색</th><th>구멍</th><th>전압</th><th>이 보드에서 쓰는 곳</th></tr>
+    <tr><td><span class="dot" style="background:#7b3ff2"></span>보라</td><td class="mono">9</td><td><b>5VSB (5 V 상시)</b></td><td><b>ESP32 전원</b>. 파워가 꺼져 있어도 살아 있어서 컨트롤러가 항상 켜져 있음 → 보드에서 3.3 V로 낮춰 씀</td></tr>
+    <tr><td><span class="dot" style="background:#1db954"></span>녹색</td><td class="mono">16</td><td>PS_ON (파워 내부 풀업, 3.3~5 V)</td><td>접지하면 파워가 켜짐 → 릴레이 NC / MOSFET이 이 선을 GND로 당김</td></tr>
+    <tr><td><span class="dot" style="background:#9aa0a6"></span>회색</td><td class="mono">8</td><td><b>PWR_OK — 5 V 논리 신호</b></td><td>파워가 정상 기동했는지 감지. 5 V라 <b>10k+10k 분압으로 2.5 V</b>로 낮춰 GPIO5에</td></tr>
+    <tr><td><span class="dot" style="background:#e8c018"></span>노랑</td><td class="mono">10</td><td><b>12 V</b></td><td><b>팬 헤더 12V 핀만</b>. 파워가 켜져 있을 때만 나옴. 컨트롤러 회로로는 안 들어감</td></tr>
+    <tr><td><span class="dot" style="background:#222"></span>검정</td><td class="mono">17 (아무 GND나)</td><td>GND</td><td>공통 그라운드</td></tr>
+    <tr><td style="color:#8b96a8"><span class="dot" style="background:#e6eaf0"></span>빨강 · 주황 · 파랑 · 흰</td><td class="mono" style="color:#8b96a8">나머지 19개</td><td style="color:#8b96a8">5 V · 3.3 V · −12 V · NC</td><td style="color:#8b96a8">안 씀 — 비워 둔다</td></tr>
+  </table>
+  <div class="legend" style="margin-top:10px">12 V는 팬으로만 가고 컨트롤러 쪽은 전부 5 V / 3.3 V 영역이다. BC250 본체는 24핀이 아니라 PCIe 8핀(12 V)으로 먹기 때문에 24핀이 통째로 놀고 있고, 그 중 다섯 가닥만 빌려 쓴다.</div>
+</div>
+
 <h2>4. 전체 연결표</h2>
 <div class="card">
 <table>
 <tr><th>ESP32-S3 핀</th><th>연결 대상</th><th>비고</th></tr>
 <tr><td class="mono">5V (VIN)</td><td>ATX 9번 보라(5VSB)</td><td>상시 전원 — 파워 꺼져도 살아있음</td></tr>
 <tr><td class="mono">GND</td><td>ATX 검정(아무거나)</td><td>모든 장치 GND 공통</td></tr>
-<tr><td class="mono">3V3</td><td>ST7789V VCC · DS18B20 VDD · 풀업저항</td><td>3.3V 전원 레일</td></tr>
+<tr><td class="mono">3V3</td><td>ST7789V VCC · DS18B20 VDD(빨강선) · 풀업저항</td><td>3.3V 전원 레일</td></tr>
 <tr><td class="mono">GPIO4</td><td>릴레이 IN</td><td>active-low 모듈 기준(yaml inverted:true)</td></tr>
 <tr><td class="mono">GPIO5</td><td>ATX 8번 회색(PWR_OK)</td><td><b>10k+10k 분압 필수</b> (5V→2.5V)</td></tr>
 <tr><td class="mono">GPIO6</td><td>전원 버튼</td><td>반대쪽은 GND, 내부 풀업 사용</td></tr>
-<tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬</td></tr>
+<tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA (노랑선)</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬 — 방수 프로브 배선은 <b>7장</b></td></tr>
 <tr><td class="mono">GPIO8</td><td>ST7789V SDA (DIN/MOSI)</td><td>SPI 데이터</td></tr>
 <tr><td class="mono">GPIO9</td><td>ST7789V SCL (SCLK)</td><td>SPI 클럭</td></tr>
 <tr><td class="mono">GPIO17</td><td>ST7789V CS</td><td>칩 선택</td></tr>
@@ -211,7 +270,7 @@
 <tr><td class="mono">GPIO18</td><td>ST7789V BL (백라이트)</td><td>PWM 밝기 제어 (메뉴에서 조절)</td></tr>
 <tr><td class="mono">GPIO10</td><td>팬 4핀-④ PWM</td><td>25kHz PWM 출력</td></tr>
 <tr><td class="mono">GPIO11</td><td>팬 4핀-③ TACH</td><td>내부 풀업, 2펄스/회전</td></tr>
-<tr><td class="mono">GPIO12 / GPIO13</td><td>메뉴 버튼 A(이동) / B(선택)</td><td>반대쪽은 GND, 내부 풀업 — 디스플레이 설정 메뉴 조작</td></tr>
+<tr><td class="mono">GPIO12 / GPIO13 / GPIO14</td><td>메뉴 버튼 A(다음·＋) / B(선택) / C(이전·−)</td><td>반대쪽은 GND, 내부 풀업 — 디스플레이 설정 메뉴 조작. <b>C(GPIO14)는 2026-08-31 추가</b> — 13번 바로 옆 핀</td></tr>
 <tr><td class="mono">GPIO48</td><td>WS2812 상태 LED</td><td>devkit 내장 LED면 배선 불필요</td></tr>
 <tr><td colspan="3" style="background:#fbfcfe">릴레이 접점: <b>COM ↔ ATX 16번 녹색(PS_ON)</b> · <b>NC ↔ GND</b> · NO는 비움 / 릴레이 VCC↔5VSB, GND↔공통</td></tr>
 <tr><td colspan="3" style="background:#fbfcfe">팬 전원: ① GND ↔ 공통 GND · ② 12V ↔ ATX 10번 노랑 (파워 켜져 있을 때만 살아남 — 정상)</td></tr>
@@ -225,12 +284,15 @@
 <tr><th colspan="3">🔘 버튼 조작</th></tr>
 <tr><th>버튼</th><th>동작</th><th>결과</th></tr>
 <tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷)</td></tr>
-<tr><td>5초 이상</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만)</td></tr>
-<tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 열기 / 다음 항목으로 이동</td></tr>
-<tr><td>길게(0.8초)</td><td>이전 항목으로 이동</td></tr>
-<tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td>항목 선택 → 값 변경 모드 진입/확정</td></tr>
+<tr><td><b>3초</b> 누르고 있기</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만). 3초 되는 <b>순간</b> 바로 꺼지므로 놓는 타이밍은 상관없음 — 2026-08-31에 5초→3초로 변경</td></tr>
+<tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 열기 / <b>다음</b> 항목으로 이동 / 값 변경 중엔 <b>값 올리기(＋)</b></td></tr>
+<tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 ＋) — 놓으면 멈춤</td></tr>
+<tr><td rowspan="2"><b>메뉴 C</b> (GPIO14) <span class="no">2026-08-31 추가</span></td><td>짧게</td><td>메뉴 열기 / <b>이전</b> 항목으로 이동 / 값 변경 중엔 <b>값 내리기(−)</b></td></tr>
+<tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 −) — 놓으면 멈춤</td></tr>
+<tr><td rowspan="2"><b>메뉴 B</b> (GPIO13)</td><td>짧게</td><td>메뉴 열기 / 항목 선택 → 값 변경 모드 진입 / 한 번 더 누르면 <b>확정</b></td></tr>
 <tr><td>길게(1.2초)</td><td>메뉴 닫기</td></tr>
 </table>
+<div class="legend">값 바꾸는 순서: <b>A·C로 항목 찾기 → B(변경 모드, 항목 양옆에 표시) → A(＋)·C(−)로 값 조절 → B(확정)</b>. 예전엔 A를 길게 눌러 되돌아갔지만 2026-08-31부터 C 버튼이 그 역할 — A 길게는 자동 반복이다.</div>
 <br>
 <table>
 <tr><th colspan="2">🎛️ 설정 메뉴 항목 (변경값은 플래시에 저장 — 재부팅에도 유지)</th></tr>
@@ -259,10 +321,436 @@
 <tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능</td></tr>
 <tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작)</td></tr>
 </table>
-<div class="legend">디스플레이 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·디스플레이 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.</div>
+<div class="legend">디스플레이 상태 화면은 7초마다 메인(전원·온도·팬) ↔ 네트워크(WiFi·IP)를 자동 순환. 온도센서·디스플레이 등이 미배선이어도 해당 기능만 꺼질 뿐 나머지는 정상 동작한다.<br>
+<b>5V 투입 직후 화면은 약 2초 동안 꺼져 있다가 켜진다 — 정상.</b> LCD 전원이 안정될 때까지 초기화를 미루는 것 (8장 참고).</div>
 </div>
 
-<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21</footer>
+<h2>6. (옵션) 보조 전원 — PSU CPU/EPS 8핀 → BC250 J2000·J2001 <span style="font-size:.85rem;color:#5a6577;font-weight:400">Micro-Fit 3.0 · 2026-08-26 추가</span></h2>
+<div class="legend" style="margin:-4px 0 12px">BC250 보드 가장자리의 Micro-Fit 8핀 헤더 두 개(J2000·J2001)에 PSU의 CPU(EPS12V) 케이블을 연결해 J1000(PCIe 8핀)과 부하를 나눈다. 위 1~5장 배선은 그대로 둔 채 케이블만 추가하는 개조.</div>
+<div class="stop">
+<b>⛔ 시작 전 4가지</b><br>
+① <b>LED1 · LED2 · PGD 세 자리는 반드시 비운다.</b> PGD를 GND에 붙이면 보드가 안 켜지고, LED 자리에 12V가 들어가면 보드를 태운다<br>
+② 12V 줄 / GND 줄이 뒤집히면 PSU 12V가 그대로 단락 → 보드에 꽂기 전에 <b>멀티미터로 J1000과 통전 체크</b>(6-6의 3번)가 최종 기준<br>
+③ <b>CPU/EPS 케이블만</b> 쓸 것 — PCIe 8핀은 12V/GND 줄이 반대라 이 어댑터에 억지로 꽂으면 극성이 뒤집힌다. 모듈러 PSU면 PSU 쪽 소켓의 <b>CPU</b> 라벨 확인<br>
+④ <b>J1000(PCIe 8핀)은 계속 꽂아둔다.</b> J2000/J2001은 대체가 아니라 <b>부하 분담</b>용
+</div>
+
+<h3>6-1. 전체 구조 — 뭘 추가하고 뭘 안 건드리나</h3>
+<div class="card">
+<svg viewBox="0 0 900 490" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="13">
+  <!-- PSU -->
+  <rect x="30" y="50" width="190" height="400" rx="10" fill="#eef2f8" stroke="#8fa3c4" stroke-width="1.5"/>
+  <text x="125" y="75" text-anchor="middle" font-weight="bold" font-size="14">ATX 파워 (PSU)</text>
+  <circle cx="212" cy="120" r="5" fill="#9aa0a6"/><text x="200" y="113" text-anchor="end">PCIe 8핀 (기존)</text>
+  <circle cx="212" cy="200" r="5" fill="#e8c018" stroke="#8a7208"/><text x="200" y="193" text-anchor="end" font-weight="bold">CPU/EPS 8핀 ★</text>
+  <text x="200" y="216" text-anchor="end" font-size="11" fill="#5a6577">4+4 분리형도 OK</text>
+  <circle cx="212" cy="380" r="5" fill="#7b3ff2"/><text x="200" y="373" text-anchor="end">24핀 (컨트롤러)</text>
+
+  <!-- PCIe → J1000 (기존) -->
+  <path d="M217,120 H560 V141 H616" stroke="#9aa0a6" stroke-width="3" fill="none"/>
+  <text x="300" y="112" fill="#666">PCIe 8핀 → J1000 (손대지 않음)</text>
+
+  <!-- EPS → 절단 -->
+  <path d="M217,200 H250" stroke="#e8c018" stroke-width="4"/>
+  <rect x="250" y="165" width="100" height="70" rx="8" fill="#fff7ed" stroke="#f5c98a" stroke-width="1.5"/>
+  <text x="300" y="187" text-anchor="middle" font-size="12">EPS 커넥터</text>
+  <text x="300" y="203" text-anchor="middle" font-size="12">잘라내고</text>
+  <text x="300" y="219" text-anchor="middle" font-size="12">8가닥 분리</text>
+
+  <!-- 묶음 A → J2000 -->
+  <path d="M350,182 H480 V222 H616" stroke="#e8c018" stroke-width="4" fill="none"/>
+  <path d="M350,190 H472 V245 H616" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="362" y="174" fill="#a08508" font-size="12">→ J2000: 노랑2+검정2</text>
+
+  <!-- 묶음 B → J2001 -->
+  <path d="M350,198 H440 V322 H616" stroke="#e8c018" stroke-width="4" fill="none"/>
+  <path d="M350,206 H432 V345 H616" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="450" y="300" fill="#a08508" font-size="12">→ J2001: 노랑2+검정2</text>
+
+  <!-- BC250 -->
+  <rect x="600" y="50" width="280" height="400" rx="10" fill="#eaf6ee" stroke="#7fb894" stroke-width="1.5"/>
+  <text x="740" y="75" text-anchor="middle" font-weight="bold" font-size="14">BC250</text>
+
+  <!-- J1000 -->
+  <text x="620" y="100" font-size="12" font-weight="bold">J1000 · PCIe 8핀 (기존 그대로)</text>
+  <g font-size="9" fill="#fff" text-anchor="middle">
+    <rect x="620" y="108" width="30" height="20" rx="3" fill="#222"/><text x="635" y="122">GND</text>
+    <rect x="653" y="108" width="30" height="20" rx="3" fill="#222"/><text x="668" y="122">GND</text>
+    <rect x="686" y="108" width="30" height="20" rx="3" fill="#222"/><text x="701" y="122">GND</text>
+    <rect x="719" y="108" width="30" height="20" rx="3" fill="#222"/><text x="734" y="122">GND</text>
+    <rect x="620" y="131" width="30" height="20" rx="3" fill="#222"/><text x="635" y="145">GND</text>
+    <rect x="653" y="131" width="30" height="20" rx="3" fill="#e8c018"/><text x="668" y="145" fill="#333">12V</text>
+    <rect x="686" y="131" width="30" height="20" rx="3" fill="#e8c018"/><text x="701" y="145" fill="#333">12V</text>
+    <rect x="719" y="131" width="30" height="20" rx="3" fill="#e8c018"/><text x="734" y="145" fill="#333">12V</text>
+  </g>
+
+  <!-- J2000 -->
+  <text x="620" y="204" font-size="12" font-weight="bold">J2000 · Micro-Fit 8핀 ★</text>
+  <g font-size="9" fill="#fff" text-anchor="middle">
+    <rect x="620" y="212" width="30" height="20" rx="3" fill="#d0342f"/><text x="635" y="226">LED1</text>
+    <rect x="653" y="212" width="30" height="20" rx="3" fill="#e8c018" stroke="#0a5c2b" stroke-width="2.5"/><text x="668" y="226" fill="#333">12V</text>
+    <rect x="686" y="212" width="30" height="20" rx="3" fill="#e8c018" stroke="#0a5c2b" stroke-width="2.5"/><text x="701" y="226" fill="#333">12V</text>
+    <rect x="719" y="212" width="30" height="20" rx="3" fill="#e8c018" opacity=".45" stroke="#555" stroke-dasharray="3 2"/><text x="734" y="226" fill="#333">12V</text>
+    <rect x="620" y="235" width="30" height="20" rx="3" fill="#d0342f"/><text x="635" y="249">LED2</text>
+    <rect x="653" y="235" width="30" height="20" rx="3" fill="#222" stroke="#0a5c2b" stroke-width="2.5"/><text x="668" y="249">GND</text>
+    <rect x="686" y="235" width="30" height="20" rx="3" fill="#222" stroke="#0a5c2b" stroke-width="2.5"/><text x="701" y="249">GND</text>
+    <rect x="719" y="235" width="30" height="20" rx="3" fill="#222" opacity=".45" stroke="#555" stroke-dasharray="3 2"/><text x="734" y="249">GND</text>
+  </g>
+
+  <!-- J2001 -->
+  <text x="620" y="304" font-size="12" font-weight="bold">J2001 · Micro-Fit 8핀 ★</text>
+  <g font-size="9" fill="#fff" text-anchor="middle">
+    <rect x="620" y="312" width="30" height="20" rx="3" fill="#e8c018" opacity=".45" stroke="#555" stroke-dasharray="3 2"/><text x="635" y="326" fill="#333">12V</text>
+    <rect x="653" y="312" width="30" height="20" rx="3" fill="#e8c018" stroke="#0a5c2b" stroke-width="2.5"/><text x="668" y="326" fill="#333">12V</text>
+    <rect x="686" y="312" width="30" height="20" rx="3" fill="#e8c018" stroke="#0a5c2b" stroke-width="2.5"/><text x="701" y="326" fill="#333">12V</text>
+    <rect x="719" y="312" width="30" height="20" rx="3" fill="#d0342f"/><text x="734" y="326">PGD</text>
+    <rect x="620" y="335" width="30" height="20" rx="3" fill="#222" opacity=".45" stroke="#555" stroke-dasharray="3 2"/><text x="635" y="349">GND</text>
+    <rect x="653" y="335" width="30" height="20" rx="3" fill="#222" stroke="#0a5c2b" stroke-width="2.5"/><text x="668" y="349">GND</text>
+    <rect x="686" y="335" width="30" height="20" rx="3" fill="#222" stroke="#0a5c2b" stroke-width="2.5"/><text x="701" y="349">GND</text>
+    <rect x="719" y="335" width="30" height="20" rx="3" fill="#222" opacity=".45" stroke="#555" stroke-dasharray="3 2"/><text x="734" y="349">GND</text>
+  </g>
+
+  <!-- 12V 공통 버스 -->
+  <path d="M752,141 H775 V322 H752 M775,222 H752" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <text transform="translate(800,330) rotate(-90)" font-size="11" fill="#a08508">12V 플레인 · 보드 안에서 공통</text>
+
+  <text x="740" y="395" text-anchor="middle" font-size="11" fill="#44506a">GND도 전부 공통 → 세 커넥터가 부하를 나눠 짐</text>
+  <text x="740" y="413" text-anchor="middle" font-size="11" fill="#a11d1d" font-weight="bold">LED1 · LED2 · PGD 자리는 비움</text>
+  <text x="740" y="431" text-anchor="middle" font-size="11" fill="#555">점선 = 확장안(통전 확인 후에만)</text>
+
+  <!-- 컨트롤러 (기존) -->
+  <path d="M217,380 H250" stroke="#7b3ff2" stroke-width="3"/>
+  <rect x="250" y="352" width="240" height="95" rx="10" fill="#eef2f8" stroke="#8fa3c4" stroke-width="1.5"/>
+  <text x="370" y="375" text-anchor="middle" font-weight="bold" font-size="13">ESP32 컨트롤러 (기존 그대로)</text>
+  <text x="370" y="395" text-anchor="middle" font-size="12" fill="#5a6577">5VSB · PS_ON · PWR_OK · 12V(팬)</text>
+  <text x="370" y="416" text-anchor="middle" font-size="11" fill="#128a3e">PS_ON 차단 → PSU 12V 전체 OFF</text>
+  <text x="370" y="433" text-anchor="middle" font-size="11" fill="#128a3e">(J1000 · J2000 · J2001 동시에 꺼짐)</text>
+
+  <text x="450" y="475" text-anchor="middle" font-size="12" font-weight="bold">★ 추가하는 건 EPS → J2000/J2001 뿐 · PCIe→J1000, 24핀→컨트롤러는 손대지 않는다</text>
+</svg>
+<div class="legend">
+  <span class="dot" style="background:#e8c018"></span>12V(노랑) ·
+  <span class="dot" style="background:#222"></span>GND(검정) ·
+  <span class="dot" style="background:#d0342f"></span>연결 금지 자리 ·
+  초록 테두리 = 기본안에서 쓰는 자리 · 점선 = 확장안(선이 더 있고 통전 확인을 마쳤을 때만)
+</div>
+</div>
+
+<h3>6-2. PSU 쪽 — CPU/EPS 8핀 케이블에서 어느 선이 뭔지</h3>
+<div class="card">
+<div class="two">
+  <div>
+    <div class="mfcap">EPS12V 8핀 (마더보드 쪽 커넥터를 정면에서, 걸쇠가 위로 오게)</div>
+    <div class="mf">
+      <div class="bar top">걸쇠(클립) 쪽</div>
+      <div class="v12">12V<small>노랑</small></div><div class="v12">12V<small>노랑</small></div><div class="v12">12V<small>노랑</small></div><div class="v12">12V<small>노랑</small></div>
+      <div class="gnd">GND<small>검정</small></div><div class="gnd">GND<small>검정</small></div><div class="gnd">GND<small>검정</small></div><div class="gnd">GND<small>검정</small></div>
+      <div class="bar">걸쇠 반대쪽</div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:280px;font-size:.88rem">
+    <b>규칙은 단순하다: 걸쇠 쪽 줄 4가닥 = 12V, 반대 줄 4가닥 = GND.</b><br>
+    ↳ PCIe 8핀은 정확히 반대(걸쇠 쪽이 GND)라서 헷갈리면 극성이 뒤집힌다 — 그래서 CPU 케이블만 쓴다.<br><br>
+    <b>4+4 분리형이면 더 쉽다.</b> 반쪽 하나가 정확히 <b>노랑 2 + 검정 2</b> → 반쪽 A는 J2000, 반쪽 B는 J2001. 자르기 전에 반쪽별로 테이프를 감아두면 끝.<br><br>
+    <b>선이 전부 검정인 슬리브 케이블이면</b> 자르기 전에 커넥터에 꽂힌 상태로 걸쇠 쪽 4가닥에 노란 테이프를 감아둔다. 자르고 나면 구분할 방법이 없다. 불안하면 PSU에만 꽂고(보드 연결 없이) 24핀 PS_ON을 GND에 점퍼 → 멀티미터로 12V 나오는 선 확인.
+  </div>
+</div>
+</div>
+
+<h3>6-3. 보드 쪽 — J2000 · J2001 자리 지도</h3>
+<div class="card">
+<div class="two">
+  <div>
+    <div class="mfcap">J2000</div>
+    <div class="mf">
+      <div class="bar top">PCB에서 먼 줄</div>
+      <div class="ban">LED1<small>⛔ 비움</small></div><div class="v12 use">12V<small>★</small></div><div class="v12 use">12V<small>★</small></div><div class="v12 ext">12V<small>확장</small></div>
+      <div class="ban">LED2<small>⛔ 비움</small></div><div class="gnd use">GND<small>★</small></div><div class="gnd use">GND<small>★</small></div><div class="gnd ext">GND<small>확장</small></div>
+      <div class="bar">PCB(보드) 쪽 줄</div>
+    </div>
+  </div>
+  <div>
+    <div class="mfcap">J2001</div>
+    <div class="mf">
+      <div class="bar top">PCB에서 먼 줄</div>
+      <div class="v12 ext">12V<small>확장</small></div><div class="v12 use">12V<small>★</small></div><div class="v12 use">12V<small>★</small></div><div class="ban">PGD<small>⛔ 비움</small></div>
+      <div class="gnd ext">GND<small>확장</small></div><div class="gnd use">GND<small>★</small></div><div class="gnd use">GND<small>★</small></div><div class="gnd ext">GND<small>확장</small></div>
+      <div class="bar">PCB(보드) 쪽 줄</div>
+    </div>
+  </div>
+</div>
+<div class="legend" style="margin-top:14px">
+  보드 가장자리에서 헤더 정면(핀 구멍 쪽)을 보고, PCB가 아래로 오게 본 배치 (mothenjoyer69 문서의 "PCB down" 핀아웃). 헤더는 Molex Micro-Fit 3.0 BMI <span class="mono">44428-0801</span> 호환.<br>
+  <b>★ 가운데 두 칸만 쓰는 이유</b>: 문서 그림이 좌우 거울로 보이더라도 2·3번째 칸은 어느 쪽으로 봐도 12V/GND라 <b>좌우 방향을 틀려도 안전</b>하다. 1·4번째 칸은 한쪽이 LED/PGD라 실수하면 바로 사고 → 점선 "확장" 자리는 6-6의 3번 통전 확인을 마친 뒤에만 쓴다.<br>
+  <b>위/아래 줄은</b> 하우징 키(각진 모서리) 때문에 한 방향으로만 꽂히지만, 어느 하우징 줄이 12V 줄에 오는지는 <b>빈 하우징을 먼저 끼워보고 + J1000과 통전 체크</b>로 정한다 (6-6의 3번).
+</div>
+<table style="margin-top:14px">
+<tr><th style="width:90px">자리</th><th>정체</th><th>왜 비우나</th></tr>
+<tr><td class="mono"><b>PGD</b></td><td>보드로 들어가는 <b>입력</b>. 랙에서 두 번째 PSU가 살아 있음을 알리는 5V 신호(PGOOD)</td><td>GND에 닿으면 보드가 꺼진다 → GND 자리로 착각해 검정선을 꽂으면 "보드가 안 켜짐"</td></tr>
+<tr><td class="mono"><b>LED1</b></td><td>보드가 내보내는 <b>출력</b>(active-low) — 랙 전면 초록 LED용</td><td rowspan="2">출력 핀에 12V나 GND를 물리면 드라이버가 탄다. 선을 꽂지 않는 게 유일한 정답</td></tr>
+<tr><td class="mono"><b>LED2</b></td><td>보드가 내보내는 <b>출력</b>(active-low) — 랙 전면 빨강 LED용</td></tr>
+</table>
+</div>
+
+<h3>6-4. 연결표</h3>
+<div class="card">
+<table>
+<tr><th style="width:170px">EPS 케이블 선</th><th>→ 자리</th><th>비고</th></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑 ①</td><td class="mono">J2000 · 먼 줄 · 2번째 칸 (12V)</td><td rowspan="4"><b>기본안 (EPS 8핀 하나)</b><br>12V 4가닥 = 최대 20 A ≈ 240 W<br>+ J1000이 그대로 있으니 합계 여유 500 W↑</td></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑 ②</td><td class="mono">J2000 · 먼 줄 · 3번째 칸 (12V)</td></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑 ③</td><td class="mono">J2001 · 먼 줄 · 2번째 칸 (12V)</td></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑 ④</td><td class="mono">J2001 · 먼 줄 · 3번째 칸 (12V)</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정 ①</td><td class="mono">J2000 · PCB 쪽 줄 · 2번째 칸 (GND)</td><td rowspan="4">4+4 분리형이면 반쪽 A(노랑①② 검정①②) → J2000, 반쪽 B → J2001</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정 ②</td><td class="mono">J2000 · PCB 쪽 줄 · 3번째 칸 (GND)</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정 ③</td><td class="mono">J2001 · PCB 쪽 줄 · 2번째 칸 (GND)</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정 ④</td><td class="mono">J2001 · PCB 쪽 줄 · 3번째 칸 (GND)</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe"><b>비우는 자리</b>: J2000 1번째 칸 위·아래(LED1·LED2) · J2001 4번째 칸 위(PGD) · 나머지 점선 자리는 기본안에서 빈 채로 둔다</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe"><b>확장안</b>: PSU에 CPU 케이블이 2개(또는 8핀 + 4핀)면 점선 자리(J2000 4번째 칸 12V/GND · J2001 1번째 칸 12V/GND · J2001 4번째 칸 아래 GND)에 추가 → 12V 6가닥 ≈ 360 W. <b>반드시 6-6의 3번 통전 확인 후.</b> 파워 하나에서 EPS 두 가닥을 뽑아 병렬로 묶는 건 같은 12V라 문제없다</td></tr>
+</table>
+</div>
+
+<h3>6-5. 부품 · 공구</h3>
+<div class="card">
+<table>
+<tr><th style="width:230px">품목</th><th>수량</th><th>비고</th></tr>
+<tr><td>Micro-Fit 3.0 리셉터클 하우징 2×4 (8핀)<br><span class="mono">Molex 43025-0800</span></td><td>2</td><td>J2000·J2001용. 알리/아마존의 "Micro-Fit 3.0 8핀 암 하네스/피그테일 18AWG" 완제품 2개를 사서 필요 없는 선은 빼내는 게 제일 빠름</td></tr>
+<tr><td>암 크림프 단자 <span class="mono">Molex 43030-0001</span> (주석, 18–24 AWG)</td><td>8 + 여분</td><td>기본안 8자리. 피그테일 완제품이면 불필요</td></tr>
+<tr><td>Micro-Fit 3.0 대응 라쳇 크림퍼</td><td>1</td><td>정품 <span class="mono">63819-0900</span> 또는 오픈배럴 소형 단자용(Engineer PA-09 급). 롱노즈로 눌러 접는 건 접촉 저항이 커져 발열 원인 → 비추</td></tr>
+<tr><td>단자 추출 핀 (Micro-Fit용)</td><td>1</td><td>피그테일에서 LED1·LED2·PGD 자리 선을 빼낼 때. 없으면 그 선을 하우징 바로 앞에서 잘라 열수축으로 절연 (빼는 게 정석)</td></tr>
+<tr><td>열수축 튜브 · 압착 슬리브(또는 납땜)</td><td>—</td><td>EPS 선과 피그테일 이음용</td></tr>
+<tr><td>케이블타이 · 글루건</td><td>—</td><td>래치를 잘라낸 하우징 빠짐 방지</td></tr>
+<tr><td><b>멀티미터</b></td><td>1</td><td><b>필수.</b> 통전(삐) 모드 있는 것</td></tr>
+</table>
+<div class="warn" style="margin-bottom:0">
+<b>선 굵기</b> — PSU CPU 케이블은 대부분 18 AWG (고급 PSU는 16 AWG). Micro-Fit 단자는 <b>18 AWG까지만</b> 들어가므로 16 AWG면 바로 압착이 안 된다 → 18 AWG 피그테일에 압착 슬리브/납땜으로 잇는다. "18 AWG가 녹았다"는 보고는 <b>PCIe 케이블 하나에 250 W 전부</b>가 몰렸을 때 얘기고, 여기선 세 커넥터가 나눠 지므로 가닥당 전류는 훨씬 낮다.<br>
+<b>래치</b> — BC250 헤더는 랙 백플레인용(BMI)이라 Micro-Fit 하우징의 걸쇠가 걸릴 홈이 없다. <b>하우징 걸쇠를 니퍼로 잘라내야 끝까지 들어간다</b> (MODDIY 어댑터 구매자 리뷰도 동일). 잘라도 하우징 모서리 키 때문에 방향은 한쪽으로만 꽂힌다. 빠짐 방지는 케이블타이나 글루건 소량.
+</div>
+</div>
+
+<h3>6-6. 제작 · 검증 순서 (이 순서대로)</h3>
+<div class="card">
+<table>
+<tr><th style="width:36px">#</th><th>할 일</th><th style="width:38%">확인 기준</th></tr>
+<tr><td>1</td><td><b>선 표시.</b> EPS 커넥터에 꽂힌 상태로 걸쇠 쪽 4가닥에 노란 테이프. 4+4면 반쪽별로 A/B 테이프. 그 다음 커넥터를 잘라낸다</td><td>노랑 4 · 검정 4가 구분됨</td></tr>
+<tr><td>2</td><td><b>빈 하우징 끼워보기.</b> 래치 잘라낸 빈 하우징을 J2000·J2001에 꽂아 방향 확인 → 보드에 닿는 줄에 "PCB" 표시, 1번째 칸 쪽에 "LED/PGD" 표시</td><td>한 방향으로만 들어감. 억지로 밀리지 않음</td></tr>
+<tr><td>3</td><td><b>통전 체크 (최종 기준).</b> PSU 케이블 전부 뽑은 상태에서 멀티미터 통전 모드: <b>J1000의 12V 핀 ↔ J2000/J2001 각 자리</b> → 삐 = 12V 자리. <b>J1000의 GND 핀 ↔ 각 자리</b> → 삐 = GND 자리. <b>어느 쪽도 안 울리는 자리 = LED1·LED2·PGD</b></td><td>3장 지도와 일치: 먼 줄 12V(3칸) / PCB 쪽 GND, 안 울리는 자리가 J2000 1번째 칸 위·아래, J2001 4번째 칸 위</td></tr>
+<tr><td>4</td><td><b>단자 삽입.</b> 3번에서 확인한 자리에만 노랑/검정을 꽂는다. LED1·LED2·PGD 자리는 빈 채로. 딸깍 소리 후 살짝 당겨서 고정 확인</td><td>4장 연결표대로 8자리</td></tr>
+<tr><td>5</td><td><b>케이블 단독 점검.</b> 저항 모드: 노랑끼리 0 Ω · 검정끼리 0 Ω · <b>노랑↔검정 무한대</b>. 하우징 정면에서 각 단자에 프로브 대고 다시 확인</td><td>노랑↔검정이 0 Ω이면 절대 꽂지 말 것</td></tr>
+<tr><td>6</td><td><b>보드에 연결.</b> J1000(PCIe) 그대로 + 새 케이블을 J2000·J2001에. PSU 쪽은 <b>CPU</b> 소켓. 케이블타이로 고정</td><td>세 커넥터 전부 끝까지 삽입</td></tr>
+<tr><td>7</td><td><b>첫 전원.</b> 컨트롤러 대시보드에서 "서버 전원" ON → 부팅 확인 → J2000 12V 자리에 프로브: <b>약 12 V</b>. 10분 부하 후 커넥터·선 손으로 만져 온도 확인</td><td>미지근 = OK / 뜨거워서 못 만지면 즉시 OFF, 압착 상태 재점검</td></tr>
+</table>
+</div>
+
+<h3>6-7. 전류 여유 계산</h3>
+<div class="card">
+<table>
+<tr><th>경로</th><th>단자 정격</th><th>12V 핀</th><th>여유</th></tr>
+<tr><td>J1000 · PCIe 8핀 (Mini-Fit Jr)</td><td>9 A/핀</td><td>3</td><td class="mono">27 A ≈ 324 W</td></tr>
+<tr><td>J2000 + J2001 · 기본안 (Micro-Fit 3.0)</td><td>최대 8.5 A/핀, 전 회로 사용 시 5 A 기준</td><td>2 + 2</td><td class="mono">20 A ≈ 240 W</td></tr>
+<tr><td>J2000 + J2001 · 확장안</td><td>〃</td><td>3 + 3</td><td class="mono">30 A ≈ 360 W</td></tr>
+<tr><td colspan="3"><b>BC250 실제 소비</b> — idle 65~105 W · 스톡 게이밍 최대 ~235 W · Furmark 250 W · GPU 오버클럭 시 320 W</td><td class="mono">기본안 + J1000 = 560 W↑</td></tr>
+</table>
+<div class="legend">그러니 기본안이면 충분하고, 확장안은 오버클럭을 세게 걸 때나 의미가 있다. 어느 경우든 핵심은 "한 케이블에 몰리지 않게" — 세 커넥터가 12V 플레인에서 병렬이라 자동으로 나눠 흐른다.</div>
+</div>
+
+<h3>6-8. 컨트롤러(ESP32)와의 관계 — 바뀌는 것 없음</h3>
+<div class="card" style="font-size:.9rem">
+<ul style="padding-left:20px">
+  <li>컨트롤러는 여전히 <b>24핀 5VSB</b>로 살고, <b>PS_ON</b>을 끊어 PSU를 끈다. PSU가 꺼지면 12V 레일 전체가 죽으므로 <b>J1000 · J2000 · J2001이 동시에 꺼진다</b> — 케이블을 몇 가닥 더 꽂았다고 달라질 게 없다.</li>
+  <li>PWR_OK(24핀 8번 회색) 감지도 그대로. 팬 12V도 그대로 24핀 10번.</li>
+  <li>위 0~5장의 배선과 YAML은 손댈 곳 없음.</li>
+  <li><b>참고(미검증)</b>: PGD는 "GND로 당기면 블레이드가 꺼지는" 입력이다. 나중에 ESP32 오픈드레인으로 PGD를 당기면 PSU는 켜둔 채 보드만 끄는 방식도 가능할 수 있지만, 내부 회로가 공개돼 있지 않으니 지금 프로젝트에서는 건드리지 않는다.</li>
+</ul>
+</div>
+
+<div class="src">출처: <a href="https://github.com/mothenjoyer69/bc250-documentation/blob/main/hardware.md">mothenjoyer69/bc250-documentation (핀아웃·PGD·커넥터 호환)</a> · <a href="https://elektricm.github.io/amd-bc250-docs/hardware/pinouts/">elektricM BC250 docs 핀아웃</a> · <a href="https://elektricm.github.io/amd-bc250-docs/hardware/power/">elektricM 전력 요구사항 (소비전력 실측)</a> · <a href="https://www.moddiy.com/products/6837/Standard-8-Pin-EPS12V-to-2-x-MicroFit-8-Pin-Cable-for-ASRock-BC250.html">MODDIY EPS→2×MicroFit 어댑터 (래치 제거 리뷰)</a> · <a href="https://mosfet.party/products/eps-8pin-to-dual-microfit">mosfet.party 어댑터 (J1000 병행 권고)</a> · <a href="https://www.molex.com/en-us/products/part-detail/444280801">Molex 44428-0801</a></div>
+
+<h2>7. DS18B20 방수 프로브 (스테인리스 관 · 3선 빨강/노랑/검정) 연결 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-08-28 추가</span></h2>
+<div class="legend" style="margin:-4px 0 12px">알리/아마존의 "DS18B20 방수 스레드 온도 프로브 스테인리스 1/2/3/5 m" 기준. 관 안에 DS18B20 칩이 에폭시로 봉해져 있고 선 3가닥만 나온다. 케이블 길이가 1 m든 5 m든 배선은 똑같다. GPU 방열판용 ①, 케이스 공기용 ② 두 개를 <b>같은 세 핀에 병렬</b>로 단다.</div>
+<div class="stop">
+<b>⛔ 시작 전 3가지</b><br>
+① <b>빨강 = 전원(3V3) · 검정 = GND · 노랑 = DATA.</b> 빨강↔검정이 바뀌면 센서가 뜨거워지고 몇 초 만에 망가질 수 있다 → 꽂기 전에 한 번 더 본다. 판매 페이지에 다른 색 표기가 있으면 그게 우선 (빨강·검정은 거의 고정, "남는 한 가닥 = DATA")<br>
+② 전원은 <b>3V3</b>에. 5V 핀 아님. 4.7 kΩ 풀업도 3V3에 건다 — DATA가 GPIO7에 직결이라 풀업을 5V에 걸면 ESP32 핀이 상한다<br>
+③ 4.7 kΩ 풀업은 <b>버스 전체에 딱 1개</b> (프로브 2개라도 1개). 캐리어·PCBA·미니 보드는 이미 보드에 있으니 <b>추가하지 않는다</b>
+</div>
+
+<h3>7-1. 선 색 → 어디에 (연결 구조)</h3>
+<div class="card">
+<svg viewBox="0 0 920 430" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="13">
+  <!-- ESP32 -->
+  <rect x="690" y="30" width="200" height="370" rx="10" fill="#eaf6ee" stroke="#7fb894" stroke-width="1.5"/>
+  <text x="790" y="56" text-anchor="middle" font-weight="bold" font-size="14">ESP32-S3 DevKit</text>
+  <text x="790" y="74" text-anchor="middle" font-size="11" fill="#5a6577">(1장 핀맵 · 왼쪽 줄)</text>
+
+  <!-- 세 줄(레일): 같은 색끼리 모으는 선 -->
+  <path d="M60,90 H704" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M60,220 H704" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M60,350 H704" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="62" y="80" fill="#a11d1d" font-weight="bold">빨강 전부 → 3V3</text>
+  <text x="62" y="210" fill="#a08508" font-weight="bold">노랑 전부 → GPIO7</text>
+  <text x="62" y="340" fill="#222" font-weight="bold">검정 전부 → GND</text>
+
+  <!-- ESP 핀 -->
+  <circle cx="704" cy="90" r="5" fill="#d0342f"/><text x="716" y="94">3V3</text><text x="716" y="108" font-size="11" fill="#5a6577">왼쪽 줄 맨 위</text>
+  <circle cx="704" cy="220" r="5" fill="#e07b00"/><text x="716" y="224">GPIO7</text><text x="716" y="238" font-size="11" fill="#5a6577">왼쪽 줄 위에서 7번째</text>
+  <circle cx="704" cy="350" r="5" fill="#222"/><text x="716" y="354">GND</text><text x="716" y="368" font-size="11" fill="#5a6577">아무 GND (맨 아래)</text>
+
+  <!-- 프로브 ① -->
+  <text x="70" y="128" font-size="12" font-weight="bold">프로브 ① GPU 방열판</text>
+  <rect x="70" y="140" width="110" height="26" rx="6" fill="#c9cfd8" stroke="#6b7686" stroke-width="1.5"/>
+  <text x="125" y="157" text-anchor="middle" font-size="11" fill="#2b3446">DS18B20</text>
+  <rect x="180" y="135" width="14" height="36" rx="2" fill="#8a94a3" stroke="#6b7686"/>
+  <path d="M194,153 H250" stroke="#444" stroke-width="6" fill="none"/>
+  <path d="M250,147 H275 V90" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M250,153 H310 V220" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M250,159 H285 V212 A8,8 0 0 1 285,228 V350" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="270" y="118" text-anchor="end" fill="#a11d1d" font-size="12">빨강</text>
+  <text x="316" y="196" fill="#a08508" font-size="12">노랑</text>
+  <text x="291" y="300" fill="#222" font-size="12">검정</text>
+
+  <!-- 프로브 ② -->
+  <text x="330" y="128" font-size="12" font-weight="bold">프로브 ② 케이스 공기</text>
+  <rect x="330" y="140" width="110" height="26" rx="6" fill="#c9cfd8" stroke="#6b7686" stroke-width="1.5"/>
+  <text x="385" y="157" text-anchor="middle" font-size="11" fill="#2b3446">DS18B20</text>
+  <rect x="440" y="135" width="14" height="36" rx="2" fill="#8a94a3" stroke="#6b7686"/>
+  <path d="M454,153 H510" stroke="#444" stroke-width="6" fill="none"/>
+  <path d="M510,147 H535 V90" stroke="#d0342f" stroke-width="3" fill="none"/>
+  <path d="M510,153 H570 V220" stroke="#e8c018" stroke-width="3" fill="none"/>
+  <path d="M510,159 H545 V212 A8,8 0 0 1 545,228 V350" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="530" y="118" text-anchor="end" fill="#a11d1d" font-size="12">빨강</text>
+  <text x="576" y="196" fill="#a08508" font-size="12">노랑</text>
+  <text x="551" y="300" fill="#222" font-size="12">검정</text>
+
+  <!-- 풀업 저항 -->
+  <path d="M625,90 V128" stroke="#666" stroke-width="3"/>
+  <rect x="615" y="128" width="20" height="48" fill="#fff" stroke="#666"/>
+  <path d="M625,176 V220" stroke="#666" stroke-width="3"/>
+  <text x="641" y="148" font-size="11" fill="#444">4.7 kΩ</text>
+  <text x="641" y="162" font-size="11" fill="#444">풀업 1개</text>
+
+  <!-- 접속점 -->
+  <circle cx="275" cy="90" r="4" fill="#d0342f"/><circle cx="535" cy="90" r="4" fill="#d0342f"/><circle cx="625" cy="90" r="4" fill="#d0342f"/>
+  <circle cx="310" cy="220" r="4" fill="#c9a200"/><circle cx="570" cy="220" r="4" fill="#c9a200"/><circle cx="625" cy="220" r="4" fill="#c9a200"/>
+  <circle cx="285" cy="350" r="4" fill="#222"/><circle cx="545" cy="350" r="4" fill="#222"/>
+
+  <text x="375" y="418" text-anchor="middle" font-size="12" font-weight="bold">★ 같은 색끼리 한 줄에 모은다 — 빨강→3V3 · 노랑→GPIO7 · 검정→GND · 4.7 kΩ은 노랑↔빨강 사이 1개</text>
+</svg>
+<div class="legend">
+  <span class="dot" style="background:#d0342f"></span>빨강 VDD ·
+  <span class="dot" style="background:#e8c018"></span>노랑 DATA(DQ) ·
+  <span class="dot" style="background:#222"></span>검정 GND ·
+  ● = 이어진 곳 · 검정선이 노랑 줄을 <b>넘어가는 아치(⌒)</b> = 안 이어짐(건너뜀)<br>
+  세 줄은 실제로는 "빨강 2가닥 + 저항 다리 하나를 3V3 핀에", "노랑 2가닥 + 저항 반대쪽 다리를 GPIO7 핀에", "검정 2가닥을 GND 핀에" 묶는다는 뜻. 프로브가 하나뿐이면 ②만 빼면 된다.
+</div>
+</div>
+
+<h3>7-2. 연결표</h3>
+<div class="card">
+<table>
+<tr><th style="width:130px">프로브 선</th><th>DevKit 직결 (점퍼선)</th><th>캐리어 · PCBA · 미니 보드 (T1 / T2 3핀 헤더)</th><th>비고</th></tr>
+<tr><td><span class="dot" style="background:#d0342f"></span>빨강</td><td class="mono">3V3</td><td class="mono">3V3 칸 (실크 <b>3V3</b>)</td><td>5V 아님. DevKit 왼쪽 줄 맨 위 핀</td></tr>
+<tr><td><span class="dot" style="background:#e8c018"></span>노랑</td><td class="mono">GPIO7 + 4.7 kΩ → 3V3</td><td class="mono">가운데 칸 (실크 <b>DQ</b> 또는 <b>SIG</b>)</td><td>보드에는 4.7 k 풀업(R4/R5) 내장 → 저항 추가 금지</td></tr>
+<tr><td><span class="dot" style="background:#222"></span>검정</td><td class="mono">GND</td><td class="mono">GND 칸 (실크 <b>GND</b>)</td><td>아무 GND 핀이나 같다</td></tr>
+<tr><td>프로브 ② (케이스)</td><td>①과 <b>같은 세 핀에 같은 색끼리</b> 병렬</td><td class="mono">T2 헤더 (①은 T1)</td><td>T1/T2는 보드 안에서 이미 병렬(둘 다 GPIO7)</td></tr>
+<tr><td colspan="4" style="background:#fbfcfe">
+  <b>T1 · T2 헤더 칸 순서</b> (세 보드 공통, 실크 인쇄대로):
+  <span class="mono" style="display:inline-block;margin-left:6px;border:1px solid #c3ccdb;border-radius:6px;overflow:hidden;vertical-align:middle">
+    <span style="display:inline-block;padding:3px 12px;background:#222;color:#fff">GND ← 검정</span><span style="display:inline-block;padding:3px 12px;background:#e8c018;color:#333">DQ ← 노랑</span><span style="display:inline-block;padding:3px 12px;background:#d0342f;color:#fff">3V3 ← 빨강</span>
+  </span>
+  &nbsp;— 3핀 듀폰 암 하우징에 검정·노랑·빨강 순서로 끼워두면 그대로 꽂힌다 (거꾸로 꽂으면 빨강↔검정이 뒤집히니 실크 확인)
+</td></tr>
+</table>
+<div class="warn" style="margin-bottom:0">
+<b>DevKit 직결일 때 4.7 kΩ 다는 법</b> — 1/4 W 4.7 kΩ 저항 한 개. 한쪽 다리는 <b>3V3</b>, 반대쪽 다리는 <b>GPIO7</b>. 제일 간단한 건 암-암 점퍼선 하우징에 프로브 노랑선과 저항 다리를 <b>같이</b> 끼워 GPIO7에 꽂고, 저항 반대 다리를 빨강선과 같이 3V3에 꽂는 것. 길게 쓸 거면 작은 만능기판이나 3핀 커넥터로 정리.<br>
+<b>ESP32 내부 풀업(약 45 kΩ)으로는 대체 불가</b> — 너무 약해서 1 m만 넘어도 못 읽는다. 빨강을 검정과 같이 GND에 묶는 "2선 기생전원" 방식도 쓰지 않는다 (yaml은 3선 정상 전원 기준·긴 케이블에서 불안정).
+</div>
+</div>
+
+<h3>7-3. 프로브 주소를 yaml에 넣기 (2개 쓸 때 필수)</h3>
+<div class="card">
+<table>
+<tr><th style="width:36px">#</th><th>할 일</th><th style="width:38%">확인 기준</th></tr>
+<tr><td>0</td><td><b>프로브가 하나뿐이면 건너뛴다.</b> yaml의 <span class="mono">address: 0x0000000000000000</span>은 "버스에 하나뿐이면 그걸 자동 선택"이라 손댈 게 없다. GPU·케이스 두 항목이 <b>같은 프로브</b>를 가리켜 같은 값이 뜨는데 정상. 팬 커브·과열 경고는 <b>GPU 온도</b> 기준이니 하나만 달 거면 GPU 방열판에</td><td>부팅 후 "GPU 온도"가 실온 근처</td></tr>
+<tr><td>1</td><td><b>둘 다 꽂고</b> USB 연결 → <span class="mono">esphome run bc250-front-st7789.yaml</span> (이미 올려뒀으면 <span class="mono">esphome logs bc250-front-st7789.yaml</span>). 부팅 로그에서 <span class="mono">Found devices:</span> 아래 두 줄을 복사<br>
+<pre style="background:#f4f6f9;border:1px solid #dde3ec;border-radius:8px;padding:8px 12px;margin:8px 0 0;font-size:.78rem;line-height:1.5;overflow-x:auto">[C][gpio.one_wire]: GPIO 1-wire bus:
+[C][gpio.one_wire]:   Pin: GPIO7
+[C][gpio.one_wire]:   Found devices:
+[C][gpio.one_wire]:     0x1c0000031edd2a28 (DS18B20)   ← 예시
+[C][gpio.one_wire]:     0x7a00000c3b41ee28 (DS18B20)   ← 예시</pre></td>
+<td>DS18B20 주소는 항상 <span class="mono">…28</span>로 끝남. 두 줄이 안 보이면 7-5</td></tr>
+<tr><td>2</td><td>yaml의 <span class="mono">sensor:</span> 아래 두 자리에 넣고 다시 <span class="mono">esphome run</span>
+<pre style="background:#f4f6f9;border:1px solid #dde3ec;border-radius:8px;padding:8px 12px;margin:8px 0 0;font-size:.78rem;line-height:1.5;overflow-x:auto">  - platform: dallas_temp
+    id: gpu_temp
+    name: "GPU 온도"
+    address: 0x1c0000031edd2a28   # ← 1번에서 복사한 주소
+    update_interval: 5s
+  - platform: dallas_temp
+    id: case_temp
+    name: "케이스 온도"
+    address: 0x7a00000c3b41ee28   # ← 나머지 하나
+    update_interval: 10s</pre></td>
+<td>주소 2개가 서로 다르고 둘 다 <span class="mono">0x</span>로 시작</td></tr>
+<tr><td>3</td><td><b>어느 게 어느 건지 확인.</b> GPU에 붙일 프로브를 손으로 꼭 쥐고 30초 → 대시보드(<span class="mono">http://bc250-front.local</span>)나 로그에서 <b>"GPU 온도"</b>가 올라가면 OK. <b>"케이스 온도"</b>가 올라가면 yaml의 두 주소를 맞바꾸고 다시 올린다</td><td>쥔 프로브 쪽 항목만 2~5 °C 상승 (방수관이라 느림)</td></tr>
+<tr><td>4</td><td>프로브에 라벨(GPU / CASE)을 붙여둔다 — 나중에 케이블 정리할 때 헷갈리지 않게</td><td>—</td></tr>
+</table>
+<div class="legend">주소가 <span class="mono">0x0000000000000000</span>인 채로 프로브 2개를 꽂으면 로그에 <span class="mono">More than one device, can't auto-select address</span>가 뜨고 둘 다 값이 안 나온다 — 고장이 아니라 주소를 넣으라는 뜻.</div>
+</div>
+
+<h3>7-4. 어디에 어떻게 붙이나</h3>
+<div class="card">
+<table>
+<tr><th style="width:130px">프로브</th><th>위치</th><th>고정</th></tr>
+<tr><td><b>① GPU</b></td><td>GPU 방열판 <b>핀 사이</b> 또는 <b>히트파이프</b>에 관이 금속에 닿게. 팬 날개·팬 흡기 바로 앞은 피한다</td><td>케이블타이로 밀착 + 관과 금속 사이에 써멀패드/써멀구리스 소량. 케이블은 팬을 안 지나가게 빼서 케이스 안쪽으로</td></tr>
+<tr><td><b>② 케이스</b></td><td>흡기 쪽 <b>공기 중</b>에 매달기 — 방열판·PSU·금속 판에 닿지 않게</td><td>케이블타이 한 개로 케이스 프레임에 늘어뜨린다</td></tr>
+<tr><td colspan="3" style="background:#fbfcfe">
+<b>읽는 값의 의미</b> — 스테인리스 관은 <b>방열판 표면</b> 온도라 OS가 보여주는 GPU 다이 온도보다 <b>낮게</b> 나온다. 방수 에폭시 때문에 반응도 수십 초 느리다(정상). 부팅 후 OS 온도와 한 번 비교해서 5장 설정 메뉴의 <b>팬 커브 시작 온도·과열 경고</b>를 이 값 기준으로 낮춰 잡을 것.<br>
+<b>케이블 5 m</b>도 4.7 kΩ이면 보통 읽힌다. 읽기 실패가 잦으면 PSU·팬 전원선과 나란히 묶인 구간을 떼어 놓고, 그래도 안 되면 풀업을 <b>3.3 kΩ(또는 2.2 kΩ)</b>로 낮춘다. 남는 케이블은 둘둘 말지 말고 지그재그로 접어 묶는다.
+</td></tr>
+</table>
+</div>
+
+<h3>7-5. 안 될 때</h3>
+<div class="card">
+<table>
+<tr><th style="width:270px">증상</th><th>원인</th><th>조치</th></tr>
+<tr><td>로그에 <span class="mono">Found no devices!</span> / 온도 항목 "알 수 없음"</td><td>노랑이 GPIO7에 안 갔거나 4.7 k 풀업 없음, 빨강이 3V3에 안 감</td><td>노랑↔GPIO7, 저항 양쪽(3V3·GPIO7), 빨강↔3V3 순서로 통전 확인. 전원 끈 상태에서 멀티미터로 GPIO7↔3V3 사이 <b>4~5 kΩ 근처</b>가 나와야 함</td></tr>
+<tr><td>딱 <b>85.0 °C</b>로 고정</td><td>DS18B20 초기값 = 전원이 불안정해 측정이 안 됨</td><td>빨강이 3V3에 확실히 닿는지, 접촉 불량(듀폰 헐거움) 확인</td></tr>
+<tr><td><b>프로브가 뜨거워짐</b> / 인식 안 됨</td><td>빨강↔검정 반대</td><td><b>즉시 분리.</b> 식힌 뒤 바르게 꽂아 다시 시도 — 오래 뒀으면 센서 사망</td></tr>
+<tr><td>가끔 <span class="mono">reading scratch pad failed</span> / 값 튐</td><td>긴 케이블 + 노이즈, 풀업 약함</td><td>PSU·팬 케이블과 떨어뜨리기 → 풀업 3.3 k/2.2 k → 케이블 짧은 것으로</td></tr>
+<tr><td><span class="mono">More than one device, can't auto-select</span></td><td>프로브 2개인데 주소가 0</td><td>7-3대로 주소 입력</td></tr>
+<tr><td><span class="mono">1-wire bus is held low</span></td><td>노랑이 GND에 닿음(단락) 또는 프로브 고장</td><td>프로브 하나씩 빼 보며 어느 쪽인지 찾기</td></tr>
+<tr><td>디스플레이 온도 자리에 <b>--</b>만 뜸</td><td>위 항목 중 하나</td><td>로그부터 본다 (<span class="mono">esphome logs bc250-front-st7789.yaml</span>). 온도가 없어도 나머지 기능은 정상 동작</td></tr>
+</table>
+</div>
+
+<h2>8. 전원 넣을 때 화면이 안 켜지고 버튼을 눌러야 나오는 문제 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-08-31 조사·펌웨어 대응</span></h2>
+<div class="card">
+<b>증상</b> — 5V(PSU 5VSB 또는 USB)를 넣으면 화면이 안 켜지고, ESP32의 버튼을 눌러 재부팅해야 정상 화면이 나온다.<br><br>
+<b>원인은 두 가지가 겹칠 수 있다</b> — 어느 쪽인지는 아래 <b>확인</b> 순서로 가른다.
+<table>
+<tr><th style="width:60px">#</th><th style="width:300px">원인</th><th>설명</th></tr>
+<tr><td>①</td><td><b>PC(맥)에 USB를 꽂아 둔 채 전원 투입 → 칩이 다운로드 모드로 들어감</b></td><td>ESP32-S3의 두 USB 포트(UART/CH343, 네이티브 USB) 모두 PC 쪽 DTR/RTS 신호로 칩을 리셋·다운로드 모드로 보내는 회로가 달려 있다. PC가 포트를 열거나 열거(enumerate)하는 순간 <span class="mono">rst:0x15 boot:0x0 (DOWNLOAD)</span>로 들어가면 <b>펌웨어가 아예 실행되지 않아</b> 화면·WiFi·LED 전부 죽은 듯 보인다. 2026-08-31 실제로 네이티브 USB 포트에서 재현됨. <b>펌웨어로는 못 막는다</b> — 운용 중엔 PC 케이블을 빼 둘 것.</td></tr>
+<tr><td>②</td><td><b>콜드 부팅 때 LCD 초기화가 씹힘</b></td><td>ESPHome 드라이버의 LCD 리셋이 1 ms LOW → 약 4.5 ms 대기 → 초기화 명령이라 데이터시트 한계(5 ms)에 걸쳐 있다. 전원이 막 들어와 LCD 내부가 정리되기 전이면 초기화가 무시돼 화면이 백지로 남고, 재부팅(RST)하면 LCD가 이미 안정된 상태라 정상. 펌웨어로 대응함(아래).</td></tr>
+</table>
+<br>
+<b>펌웨어 대응 (yaml <span class="mono">esphome: on_boot:</span> + <span class="mono">output: lcd_rst</span>)</b> — ②에 대한 조치. <span style="color:#0a5c2b;font-weight:700">2026-08-31 실물에서 해결 확인됨</span> (전원 투입만으로 화면 켜짐)
+<table>
+<tr><th style="width:120px">시점</th><th>동작</th></tr>
+<tr><td>부팅 직후</td><td>백라이트 OFF, LCD RST(GPIO16)를 <b>1초간 LOW로 유지</b> (그 사이 LCD·릴레이로 켜진 PSU 전원 안정) → HIGH → 0.2초 대기 → 그 다음에 LCD 초기화</td></tr>
+<tr><td>초기화 직후</td><td>메뉴에 저장된 밝기로 백라이트 ON — 화면이 "백지 → 정상"이 아니라 "꺼짐 → 정상"으로 켜진다. <b>전원 투입 후 약 1.5초 꺼져 있는 건 정상</b></td></tr>
+</table>
+<br>
+<b>확인 순서</b> — 배선은 바꿀 것 없음
+<table>
+<tr><th style="width:40px">#</th><th style="width:330px">할 것</th><th>결과 → 뜻</th></tr>
+<tr><td>1</td><td><b>USB 케이블을 PC에서 완전히 뺀다.</b> 5VSB(또는 USB 충전기)만으로 전원 투입</td><td>2초 안에 화면 뜸 → 해결. 안 뜨면 2번으로</td></tr>
+<tr><td>2</td><td>그 상태로 5초 뒤 상태 LED 색, 폰 WiFi 목록에 <span class="mono">bc250-front-setup</span>(AP 모드일 때) 또는 공유기 접속 여부</td><td>LED 켜짐/AP 보임 → ESP는 부팅됨, LCD만 실패(②) → yaml <span class="mono">on_boot</span>의 <span class="mono">delay(1000)</span>을 3000으로 올리고 LCD VCC↔GND에 100 µF 전해 콘덴서<br>LED도 꺼짐·AP도 없음 → ESP 자체가 안 뜸 → 3번</td></tr>
+<tr><td>3</td><td>ESP32 보드의 <b>어느 버튼</b>으로 살아나는지 확인 (실크 <span class="mono">RST</span>/<span class="mono">EN</span> vs <span class="mono">BOOT</span>)</td><td>RST로 살아남 → 전원 상승이 느려 EN 타이밍 어긋남: DevKit <span class="mono">EN</span>↔<span class="mono">GND</span>에 1 µF, 5V↔GND에 470 µF 전해 콘덴서<br>BOOT로 살아남 → GPIO0 배선/보드 이상(정상 보드는 BOOT가 동작 중 아무 영향 없음) — GPIO0에 뭔가 닿아 있는지 확인</td></tr>
+<tr><td>4</td><td>PC에 꽂아 두고 써야 하면</td><td>①을 감수해야 함. 포트를 여는 프로그램(esphome logs, 시리얼 모니터)이 리셋을 걸 수 있으니, 화면이 죽어 있으면 <span class="mono">RST</span> 한 번</td></tr>
+</table>
+</div>
+
+<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21 작성 · 2026-08-31 갱신 (버튼 C · 3초 강제종료 · 콜드부팅 대기)</footer>
 </div>
 </body>
 </html>

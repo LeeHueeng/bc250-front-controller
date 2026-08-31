@@ -14,9 +14,18 @@
 # ── 핀맵 (기존 그대로) ─────────────────────────────────────────────────────────────
 #  GPIO4  릴레이 IN            GPIO10 팬 PWM 출력 (25kHz)
 #  GPIO5  PWR_OK 감지(분압)     GPIO11 팬 타코 입력
-#  GPIO6  전원 버튼(GND로)      GPIO12 메뉴 버튼A(이동)
-#  GPIO7  DS18B20 원와이어      GPIO13 메뉴 버튼B(선택)
-#  GPIO48 WS2812 상태 LED
+#  GPIO6  전원 버튼(GND로)      GPIO12 메뉴 버튼A (다음 항목 / 값 올리기 +)
+#  GPIO7  DS18B20 원와이어      GPIO13 메뉴 버튼B (선택·확정)
+#  GPIO48 WS2812 상태 LED       GPIO14 메뉴 버튼C (이전 항목 / 값 내리기 −)  ← 2026-08-31 추가
+#
+# ── 2026-08-31 변경 ──────────────────────────────────────────────────────────────
+#  · 5V 투입(콜드 부팅) 때 RST를 눌러야 화면이 나오던 문제: 디스플레이 초기화 전에 LCD RST를
+#    1초간 LOW로 잡아 두었다가(전원 안정 대기 겸) 해제 후 200ms 뒤 초기화 (esphome.on_boot + output lcd_rst)
+#  · 주의: ESP32-S3 네이티브 USB 포트를 PC(맥)에 꽂아 두면 PC가 포트를 여는 순간 칩이 다운로드 모드로
+#    리셋될 수 있음(rst:0x15, boot:0x0 DOWNLOAD) → 화면·WiFi 전부 죽은 것처럼 보임. 펌웨어로 못 막음.
+#    평상시엔 PC 케이블을 빼고, 로그가 필요하면 UART(CH343) 포트를 쓸 것.
+#  · 전원 버튼 강제 종료: 5초 → 3초 (누르고 있으면 3초 되는 순간 실행, 놓는 타이밍 무관)
+#  · 메뉴 버튼 C(GPIO14) 추가: 이전 항목 / 값 내리기. A·C 길게 누르면 0.2초마다 자동 반복
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -35,10 +44,35 @@
 substitutions:
   # BC-250 OS 세팅 후 실제 IP·포트로 교체 (BC-250 쪽 shutdown 에이전트는 OS 설치 때 만듦)
   bc250_shutdown_url: "http://192.168.0.50:8420/shutdown"
+  # 릴레이 구동 극성 — 시판 릴레이 모듈(옵토커플러, active-low)이면 "true",
+  # 캐리어 PCB(hardware/bc250-front-carrier, NPN 직결 active-high)면 "false"
+  relay_inverted: "true"
+  # 로그 출력 UART — DevKitC-1(CH343 USB-시리얼)은 UART0,
+  # PCBA 보드(hardware/bc250-front-pcba, 네이티브 USB-C)는 USB_SERIAL_JTAG
+  log_uart: UART0
 
 esphome:
   name: bc250-front
   friendly_name: BC250 컨트롤러
+  # ── 콜드 부팅(5V 투입) 때 LCD가 안 켜지고 RST를 눌러야 나오던 문제 대응 ──
+  # ESPHome st7789v 드라이버의 리셋은 1ms LOW → ~4.5ms 대기 → SLPOUT 로 데이터시트 한계(5ms)에
+  # 걸쳐 있어, 전원이 막 들어와 LCD 내부 상태가 정리되지 않은 콜드 부팅에서는 초기화가 씹힐 수 있다
+  # (RST로 재부팅하면 LCD가 이미 안정된 상태라 정상). 그래서 드라이버 초기화(priority 400) 전에
+  # LCD RST(GPIO16)를 1초간 LOW로 잡아 두고(그 사이 LCD·릴레이로 켜진 PSU 전원도 안정) → HIGH →
+  # 200ms 뒤에 드라이버가 초기화하도록 한다. 기다리는 동안은 백라이트를 꺼서 백지 화면이 안 보이게 한다.
+  # GPIO16은 output.lcd_rst 와 display.reset_pin 이 공유 (둘 다 allow_other_uses: true).
+  on_boot:
+    - priority: 450          # 디스플레이(400)보다 먼저, 릴레이·출력·number 복원(800)보다 나중
+      then:
+        - lambda: |-
+            id(backlight_pwm).set_level(0.0f);   // 대기 중 백라이트 OFF
+            id(lcd_rst).turn_off();               // LCD RST LOW (output 셋업 때부터 이미 LOW)
+            delay(1000);                          // 리셋 유지한 채 전원 안정 대기 (블로킹)
+            id(lcd_rst).turn_on();                // LCD RST HIGH — 리셋 해제
+            delay(200);                           // 데이터시트 리셋 해제 후 대기(120ms) + 여유
+    - priority: 350          # 디스플레이 초기화가 끝난 직후: 저장된 밝기로 백라이트 ON
+      then:
+        - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -46,7 +80,7 @@ esp32:
     type: esp-idf
 
 logger:
-  hardware_uart: UART0   # CH343 계열 보드 필수 (USB-JTAG 아님)
+  hardware_uart: ${log_uart}   # DevKit=UART0 / PCBA=USB_SERIAL_JTAG (substitutions 참고)
 api:            # HA 직결 (자동 발견·이벤트·서비스)
   reboot_timeout: 0s
 ota:
@@ -95,6 +129,26 @@ script:
       - delay: !lambda "return (uint32_t) id(shutdown_wait).state * 1000;"
       - switch.turn_off: server_power
       - globals.set: {id: shutting_down, value: "false"}
+
+  # 메뉴 버튼 A/C 길게 누르기: 0.6초 후부터 0.2초마다 한 칸씩 자동 반복 (놓으면 즉시 중단)
+  - id: hold_next
+    mode: restart
+    then:
+      - delay: 600ms
+      - while:
+          condition: {binary_sensor.is_on: btn_next}
+          then:
+            - display_menu.down: settings_menu
+            - delay: 200ms
+  - id: hold_prev
+    mode: restart
+    then:
+      - delay: 600ms
+      - while:
+          condition: {binary_sensor.is_on: btn_prev}
+          then:
+            - display_menu.up: settings_menu
+            - delay: 200ms
 
 button:
   - platform: template
@@ -171,7 +225,7 @@ switch:
   - platform: gpio
     id: relay
     pin: GPIO4
-    inverted: true          # active-low 릴레이 모듈 기준
+    inverted: ${relay_inverted}   # 모듈=true / 캐리어 PCB=false (substitutions 참고)
     restore_mode: RESTORE_DEFAULT_OFF  # 재부팅해도 마지막 전원 상태 유지 (기본=서버 ON)
 
   - platform: template
@@ -195,29 +249,54 @@ binary_sensor:
               condition: {switch.is_off: server_power}
               then: [switch.turn_on: server_power]
               else: [script.execute: graceful_shutdown]
-      # 5초 이상: 강제 전원 컷
-      - timing: [ON for at least 5s]
+      # 3초 이상 누르고 있으면 강제 전원 컷 (3초 되는 순간 실행 — 놓는 타이밍 맞출 필요 없음)
+      - timing: [ON for at least 3s]
         then: [switch.turn_off: server_power]
 
-  - platform: gpio          # 메뉴 버튼 A: 이동
-    id: btn_nav
+  # 메뉴 버튼 3개 (rotary 모드): A=다음 항목/값 올리기(+)  C=이전 항목/값 내리기(−)  B=선택·확정
+  # 짧게(≤0.5초) 한 칸, 길게(≥0.6초) 누르고 있으면 0.2초마다 자동 반복. 메뉴가 닫혀 있으면 아무 버튼이나 → 메뉴 열기
+  - platform: gpio          # 메뉴 버튼 A: 다음 항목 / 값 올리기(+)
+    id: btn_next
     pin: {number: GPIO12, mode: {input: true, pullup: true}, inverted: true}
-    on_multi_click:
-      - timing: [ON for at most 0.6s]
-        then:
-          - if:
-              condition: {display_menu.is_active: settings_menu}
-              then: [display_menu.down: settings_menu]
-              else: [display_menu.show: settings_menu]
-      - timing: [ON for at least 0.8s]
-        then:
-          - if:
-              condition: {display_menu.is_active: settings_menu}
-              then: [display_menu.up: settings_menu]
+    filters: [delayed_on_off: 20ms]   # 채터링 제거
+    on_click:
+      min_length: 30ms
+      max_length: 500ms
+      then:
+        - if:
+            condition: {display_menu.is_active: settings_menu}
+            then: [display_menu.down: settings_menu]
+            else: [display_menu.show: settings_menu]
+    on_press:
+      - if:
+          condition: {display_menu.is_active: settings_menu}
+          then: [script.execute: hold_next]
+    on_release:
+      - script.stop: hold_next
 
-  - platform: gpio          # 메뉴 버튼 B: 선택
+  - platform: gpio          # 메뉴 버튼 C (2026-08-31 추가): 이전 항목 / 값 내리기(−)
+    id: btn_prev
+    pin: {number: GPIO14, mode: {input: true, pullup: true}, inverted: true}
+    filters: [delayed_on_off: 20ms]
+    on_click:
+      min_length: 30ms
+      max_length: 500ms
+      then:
+        - if:
+            condition: {display_menu.is_active: settings_menu}
+            then: [display_menu.up: settings_menu]
+            else: [display_menu.show: settings_menu]
+    on_press:
+      - if:
+          condition: {display_menu.is_active: settings_menu}
+          then: [script.execute: hold_prev]
+    on_release:
+      - script.stop: hold_prev
+
+  - platform: gpio          # 메뉴 버튼 B: 선택·확정 (길게 1.2초 = 메뉴 닫기)
     id: btn_sel
     pin: {number: GPIO13, mode: {input: true, pullup: true}, inverted: true}
+    filters: [delayed_on_off: 20ms]
     on_multi_click:
       - timing: [ON for at most 0.6s]
         then:
@@ -253,12 +332,12 @@ sensor:
   - platform: dallas_temp
     id: gpu_temp
     name: "GPU 온도"
-    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    address: 0xf200000022dcf928   # 2026-08-28 부팅 로그에서 읽은 실제 주소 (GPU/케이스 구분은 미확인 — 손으로 쥐어 확인, 반대면 아래와 맞바꿀 것)
     update_interval: 5s
   - platform: dallas_temp
     id: case_temp
     name: "케이스 온도"
-    address: 0x0000000000000000   # 첫 부팅 로그의 실제 주소로 교체
+    address: 0xd4000000c8df1728   # 2026-08-28 부팅 로그에서 읽은 실제 주소
     update_interval: 10s
   - platform: pulse_counter
     id: fan_rpm
@@ -297,6 +376,9 @@ output:
     id: backlight_pwm
     pin: GPIO18
     frequency: 5000 Hz
+  - platform: gpio          # LCD RST 직접 제어 — 부팅 때 긴 하드 리셋용 (esphome.on_boot 참고)
+    id: lcd_rst
+    pin: {number: GPIO16, allow_other_uses: true}   # display.reset_pin 과 공유
 
 fan:
   - platform: speed
@@ -387,7 +469,7 @@ font:
   - file: "gfonts://Noto Sans KR@500"   # 메뉴용 한글 폰트
     id: f_kr
     size: 22
-    glyphs: ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.%<>+-:/°팬모드수동프리셋화면밝기과열경고종료대시간컨트롤러재부팅닫자조용히표준성능'
+    glyphs: ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.%<>()+-:/°팬모드수동프리셋화면밝기과열경고종료대시간컨트롤러재부팅닫자조용히표준성능'
 
 # ─── ST7789V 240×320 디스플레이 ──────────────
 display:
@@ -400,7 +482,7 @@ display:
     offset_width: 0
     cs_pin: GPIO17
     dc_pin: GPIO15
-    reset_pin: GPIO16
+    reset_pin: {number: GPIO16, allow_other_uses: true}   # output.lcd_rst 와 공유 (부팅 때 긴 리셋)
     rotation: 0
     update_interval: 1s
     pages:
@@ -476,7 +558,7 @@ display:
           it.print(18, 226, id(f_20), Color(150, 160, 180), "SIGNAL");
           it.printf(18, 252, id(f_20), Color(255, 255, 255), "%d dBm", (int) id(wifi_rssi).state);
 
-# ─── 로컬 설정 메뉴 (버튼 2개로 조작) ───────────
+# ─── 로컬 설정 메뉴 (버튼 3개로 조작: A 다음/+ · C 이전/− · B 선택) ───────────
 graphical_display_menu:
   id: settings_menu
   display: lcd
