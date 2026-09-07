@@ -77,6 +77,8 @@
 #  · (기록) 9/7 보드에 HA 쪽 ESPHome 2025.2.2 로 빌드한 8/31 커밋본이 올라가 있었음 → 화면 1초 갱신(루프 30% 블로킹)·
 #    GPIO5 디지털 입력 튐(분당 70회)·다른 API/OTA 비밀번호. 이 파일은 2026.8 문법(request_headers·digest)이라 반드시
 #    이 저장소의 secrets.yaml 과 ESPHome 2026.8+ 로 빌드해 올릴 것 (USB: esphome upload … --device /dev/cu.usbmodem5C630586901).
+#  · 버그 수정: "서버 전원" 템플릿 스위치가 부팅 때 저장된 OFF 를 복원(turn_off_action)하며 릴레이를 켜서, 콜드 부팅
+#    자동 ON 정책이 안 먹었음(9/1 검증 땐 저장값이 ON 이라 드러나지 않음). restore_mode: DISABLED 로 해결.
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -508,6 +510,10 @@ switch:
     name: "서버 전원"
     icon: mdi:server
     lambda: 'return !id(relay).state;'
+    # 2026-09-07 버그 수정: 템플릿 스위치 기본값(RESTORE_DEFAULT_OFF)이 부팅 때 저장된 OFF 를 복원하며 turn_off_action 을
+    # 실행 → 릴레이 ON(서버 꺼짐). 릴레이 ALWAYS_OFF·on_boot(700) 정책보다 먼저 돌아 "전원 투입 자동 부팅"이 무력화됐음
+    # (로그: "Restored state OFF" 직후 "부팅 — 서버 ON" 이 찍히지만 실제론 꺼짐). 상태는 릴레이에서 오므로 복원 자체를 끈다.
+    restore_mode: DISABLED
     turn_on_action:
       - if:
           condition: {binary_sensor.is_on: overheat_critical}   # 과열 위험이 아직 안 풀렸으면 켜기 거부 (2026-09-01)
