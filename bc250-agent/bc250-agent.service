@@ -1,0 +1,17 @@
+# BC250 종료 에이전트 systemd 유닛 — /etc/systemd/system/bc250-agent.service 로 복사
+# 설치·토큰 설정은 docs/wiring-guide-st7789.html 11장 (또는 install.sh)
+[Unit]
+Description=BC250 shutdown agent for the front controller (ESP32)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/bc250-agent.env
+ExecStart=/usr/bin/python3 /usr/local/bin/bc250_agent.py
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

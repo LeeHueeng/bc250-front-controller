@@ -62,7 +62,7 @@
 <div class="wrap">
 
 <h1>⚡ BC250 전면 컨트롤러 배선도 <span style="font-size:1rem;color:#3b6fd4">(ST7789V 2.4인치 SPI 에디션)</span></h1>
-<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front-st7789.yaml과 1:1 대응) · 6장 J2000/J2001 보조 전원은 2026-08-26 추가 · 7장 DS18B20 방수 프로브는 2026-08-28 추가</div>
+<div class="sub">ESP32-S3 (2×22핀 devkit) · ATX 파워 · 2026-08-21 기준 (ESPHome bc250-front-st7789.yaml과 1:1 대응) · 6장 J2000/J2001 보조 전원은 2026-08-26 추가 · 7장 DS18B20 방수 프로브는 2026-08-28 추가 · <b>10장 화면 깨짐 자동 복구 · 전원 투입 자동 부팅 · 11장 BC250 종료 에이전트는 2026-09-01 추가</b></div>
 
 <div class="warn">
 <b>⚠ 시작 전 3가지</b><br>
@@ -259,14 +259,14 @@
 <tr><td class="mono">GND</td><td>ATX 검정(아무거나)</td><td>모든 장치 GND 공통</td></tr>
 <tr><td class="mono">3V3</td><td>ST7789V VCC · DS18B20 VDD(빨강선) · 풀업저항</td><td>3.3V 전원 레일</td></tr>
 <tr><td class="mono">GPIO4</td><td>릴레이 IN</td><td>active-low 모듈 기준(yaml inverted:true)</td></tr>
-<tr><td class="mono">GPIO5</td><td>ATX 8번 회색(PWR_OK)</td><td><b>10k+10k 분압 필수</b> (5V→2.5V)</td></tr>
+<tr><td class="mono">GPIO5</td><td>ATX 8번 회색(PWR_OK)</td><td><b>10k+10k 분압 필수</b> (5V→2.5V). 2026-09-01부터 <b>ADC로 전압을 읽어</b> 1.5 V 넘으면 켜짐 / 1.0 V 아래면 꺼짐으로 판정 — 실제 전압은 웹/HA의 <b>"PWR_OK 전압"</b> 센서에 보임 (파워 켜짐 ≈ 2.5 V, 꺼짐 ≈ 0 V, 선이 안 물렸으면 0.1~0.5 V를 떠돎)</td></tr>
 <tr><td class="mono">GPIO6</td><td>전원 버튼</td><td>반대쪽은 GND, 내부 풀업 사용</td></tr>
 <tr><td class="mono">GPIO7</td><td>DS18B20 ×2 DATA (노랑선)</td><td>3.3V로 4.7k 풀업 1개, 센서는 병렬 — 방수 프로브 배선은 <b>7장</b></td></tr>
 <tr><td class="mono">GPIO8</td><td>ST7789V SDA (DIN/MOSI)</td><td>SPI 데이터</td></tr>
 <tr><td class="mono">GPIO9</td><td>ST7789V SCL (SCLK)</td><td>SPI 클럭</td></tr>
 <tr><td class="mono">GPIO17</td><td>ST7789V CS</td><td>칩 선택</td></tr>
-<tr><td class="mono">GPIO15</td><td>ST7789V DC (A0/RS)</td><td>데이터/커맨드 구분</td></tr>
-<tr><td class="mono">GPIO16</td><td>ST7789V RST (RESET)</td><td>리셋</td></tr>
+<tr><td class="mono">GPIO15</td><td>ST7789V DC (A0/RS)</td><td>데이터/커맨드 구분 — 펌웨어의 화면 복구 스크립트가 같은 핀을 출력(<span class="mono">lcd_dc</span>)으로도 씀. 배선은 그대로</td></tr>
+<tr><td class="mono">GPIO16</td><td>ST7789V RST (RESET)</td><td>리셋 — 부팅 때 1초 긴 리셋·하드 복구용 출력(<span class="mono">lcd_rst</span>)과 공유. 배선은 그대로</td></tr>
 <tr><td class="mono">GPIO18</td><td>ST7789V BL (백라이트)</td><td>PWM 밝기 제어 (메뉴에서 조절)</td></tr>
 <tr><td class="mono">GPIO10</td><td>팬 4핀-④ PWM</td><td>25kHz PWM 출력</td></tr>
 <tr><td class="mono">GPIO11</td><td>팬 4핀-③ TACH</td><td>내부 풀업, 2펄스/회전</td></tr>
@@ -283,7 +283,7 @@
 <table>
 <tr><th colspan="3">🔘 버튼 조작</th></tr>
 <tr><th>버튼</th><th>동작</th><th>결과</th></tr>
-<tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> / 켜져 있으면 <b>정상 종료</b> (OS에 종료 명령 → 대기 → 전원 컷). <b>종료 명령이 실패하면(OS 에이전트 없음·네트워크 불통) 전원을 끊지 않고 유지</b> + LED 빨강 — 그때는 아래 3초 강제 컷을 쓴다</td></tr>
+<tr><td rowspan="2"><b>전원 버튼</b> (GPIO6)</td><td>짧게</td><td>꺼져 있으면 <b>켜기</b> (단, <b>과열 위험</b>이 아직 안 풀렸으면 거부) / 켜져 있으면 <b>정상 종료</b>: 화면 하단 <span class="mono">SENDING SHUTDOWN</span> → BC250 에이전트(11장)에 종료 명령 → <span class="mono">SHUTTING DOWN 43s</span> 카운트다운 → 전원 컷. 대기가 끝났는데 OS가 아직 응답하면 한 번 더 기다린다(최대 2배). <b>종료 명령이 실패하면(에이전트 없음·네트워크 불통·토큰 불일치) 전원을 끊지 않고 유지</b> + LED 빨강 + 하단 <span class="mono">SHUTDOWN REQUEST FAILED</span>가 다음 전원 조작까지 남는다 — 그때는 아래 3초 강제 컷을 쓴다</td></tr>
 <tr><td><b>3초</b> 누르고 있기</td><td><b>강제 전원 컷</b> (콘센트 뽑기와 동일 — 서버가 뻗었을 때만). 3초 되는 <b>순간</b> 바로 꺼지므로 놓는 타이밍은 상관없음 — 2026-08-31에 5초→3초로 변경</td></tr>
 <tr><td rowspan="2"><b>메뉴 A</b> (GPIO12)</td><td>짧게</td><td>메뉴 닫혀 있으면 <b>다음 화면</b>(메인 ↔ 네트워크) / 메뉴에선 <b>다음</b> 항목 / 값 변경 중엔 <b>값 올리기(＋)</b></td></tr>
 <tr><td>누르고 있기</td><td>0.6초 뒤부터 0.2초마다 자동 반복 (항목 이동·값 ＋) — 놓으면 멈춤</td></tr>
@@ -302,9 +302,17 @@
 <tr><td class="mono">화면 밝기</td><td>10~100% — ST7789 백라이트 PWM 밝기. <b>자동 어둡게</b>: 서버 꺼짐 → 10%, 밤 23~07시(인터넷 시계가 맞을 때만) → 30%, 아무 버튼이나 누르면 30초간 원래 밝기 (값은 yaml <span class="mono">off_brightness / night_start / night_end / night_brightness</span>)</td></tr>
 <tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C, <b>5°C 단위</b>). 여기서 <b>+10°C가 60초 지속되면 자동 정상 종료</b>, 종료 요청이 실패하면 강제 전원 컷 (마진은 yaml <span class="mono">critical_margin</span>)</td></tr>
 <tr><td class="mono">종료 대기 s</td><td>정상 종료 시 OS가 꺼질 때까지 기다리는 시간 (30~180초)</td></tr>
-<tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — 서버가 <b>켜져 있으면 전원 유지</b> (NC 배선 덕분). 서버가 <b>꺼져 있을 때</b>는 재부팅 중 릴레이 입력이 잠깐 풀리며 PSU가 약 1초 켜졌다 꺼질 수 있음(정상, 무해)</td></tr>
+<tr><td class="mono">화면 복구 <span class="no">2026-09-01 추가</span></td><td>LCD를 RST 핀으로 완전히 리셋하고 초기화를 처음부터 다시 함 — 화면이 깨진 채 <b>1분이 지나도 안 돌아올 때</b>. 약 0.4초 꺼졌다 켜진다. 웹/HA에는 "LCD 화면 복구" 버튼. 평소의 깨짐은 <b>10장</b>의 자동 복구가 알아서 처리</td></tr>
+<tr><td class="mono">컨트롤러 재부팅</td><td>ESP32만 재시작 — 서버가 <b>켜져 있으면 전원 유지</b> (NC 배선 덕분). 서버가 <b>꺼져 있을 때</b>는 재부팅 중 릴레이 입력이 잠깐 풀리며 PSU가 약 1~2초 켜졌다 꺼질 수 있음(정상, 무해) — 재부팅 뒤 꺼짐 상태는 그대로 복원된다(아래 전원 정책)</td></tr>
 <tr><td class="mono">초기화 ▶ 설정값만 초기화</td><td>팬·밝기·과열·종료대기를 <b>기본값으로</b> 되돌림 — <b>WiFi·전원 상태는 유지</b></td></tr>
 <tr><td class="mono">초기화 ▶ 공장 초기화(WiFi 포함)</td><td>WiFi 비밀번호까지 <b>전부 지우고 재부팅</b> → 다시 <span class="mono">bc250-front-setup</span> AP로 시작. 웹/HA에도 "공장 초기화" 버튼으로 있음</td></tr>
+</table>
+<br>
+<table>
+<tr><th colspan="2">🔌 전원 정책 — 컨트롤러가 켜질 때 서버는? <span style="font-weight:400;font-size:.8rem">2026-09-01 변경</span></th></tr>
+<tr><td style="width:230px"><b>5VSB/AC 투입 (콜드 부팅)</b><br><span style="color:#5a6577;font-size:.85rem">콘센트·PSU 스위치·5VSB 선을 뽑았다 꽂음, ESP32 RST 버튼도 포함</span></td><td><b>서버 무조건 ON</b> — 마지막에 꺼 놓고 뽑았어도 켜진다 (릴레이 NC 접점이라 5VSB가 들어오는 순간 PS_ON이 접지돼 PSU가 켜지고, 펌웨어도 그 상태를 유지). 이게 싫으면 yaml <span class="mono">power_on_boot: "false"</span> → 예전처럼 마지막 상태 복원</td></tr>
+<tr><td><b>소프트 재부팅</b><br><span style="color:#5a6577;font-size:.85rem">OTA 업데이트·"컨트롤러 재부팅"·안전 모드·워치독</span></td><td><b>마지막 상태 복원</b> — 서버를 꺼 둔 채였으면 부팅 직후 다시 끈다(그 사이 PSU가 1~2초 켜질 수 있음). 켜져 있었으면 NC 접점 덕에 전원이 끊기지 않는다</td></tr>
+<tr><td>예전 동작 (2026-08-31까지)</td><td>어느 경우든 마지막 상태 복원 → 서버를 끄고 전원을 뽑았다 꽂으면 <b>꺼진 채</b>라 "전원 넣어도 자동 부팅이 안 된다"고 보였음</td></tr>
 </table>
 <br>
 <table>
@@ -312,15 +320,25 @@
 <tr><td>꺼짐</td><td>서버 전원 꺼짐</td></tr>
 <tr><td>🟢 초록</td><td>정상 동작</td></tr>
 <tr><td>🟡 노랑</td><td>정상 종료 진행 중</td></tr>
-<tr><td>🔴 빨강</td><td>팬 고장 또는 과열 · 정상 종료 요청이 실패했을 때도 몇 초간 빨강(전원은 유지됨)</td></tr>
+<tr><td>🔴 빨강</td><td>팬 고장 · 과열 · <b>PSU 이상</b>(릴레이는 켰는데 PWR_OK가 10초 넘게 안 옴) · <b>정상 종료 요청 실패</b>(다음 전원 조작까지 유지, 전원은 유지됨). 무엇인지는 화면 하단 바에 적힌다</td></tr>
+</table>
+<br>
+<table>
+<tr><th colspan="2">🖥️ 메인 화면 하단 바 <span style="font-weight:400;font-size:.8rem">2026-09-01 변경</span></th></tr>
+<tr><td style="width:230px">평소: <span class="mono">FAN · TEMP · PSU · NET</span> 점 4개</td><td>초록=정상, 빨강=팬 고장/과열, PSU 점은 PWR_OK(회색=파워 꺼짐), NET 노랑=WiFi 끊김. PSU 점이 실제와 다르면 웹의 <b>"PWR_OK 전압"</b>을 볼 것 — 파워가 켜져 있는데 0 V 근처면 회색선·분압·GND 배선이 안 물린 것</td></tr>
+<tr><td>🟨 <span class="mono">SENDING SHUTDOWN</span></td><td>에이전트에 종료 명령 보내는 중 (최대 3초, 그동안 버튼이 안 먹는 건 정상)</td></tr>
+<tr><td>🟨 <span class="mono">SHUTTING DOWN 43s</span></td><td>OS가 꺼지길 기다리는 중 — 카운트다운이 0이 되면 전원 컷. 급하면 전원 버튼 3초</td></tr>
+<tr><td>🟥 <span class="mono">SHUTDOWN REQUEST FAILED / HOLD POWER 3S TO FORCE OFF</span></td><td>종료 명령이 실패해 전원을 유지 중. 11장(에이전트·IP·토큰·방화벽) 확인. 강제로 끄려면 전원 버튼 3초</td></tr>
+<tr><td>🟥 <span class="mono">PSU NOT OK / CHECK PS-ON RELAY / PWR-OK</span></td><td>릴레이는 켰는데 PWR_OK가 10초 넘게 1.5 V를 못 넘음 — 파워가 정말 안 켜졌으면 릴레이 NC↔PS_ON 배선·PSU, 파워는 켜졌는데 뜨면 회색선/분압/GND가 GPIO5에 안 물린 것 ("PWR_OK 전압" 확인)</td></tr>
+<tr><td>네트워크 화면(메뉴 A)에 <span class="mono">OFFLINE</span></td><td>WiFi 실패 1분 뒤 설정용 AP <span class="mono">bc250-front-setup</span>가 뜬다(비밀번호: <span class="mono">secrets.yaml</span>의 <span class="mono">ap_password</span>) → <span class="mono">192.168.4.1</span></td></tr>
 </table>
 <br>
 <table>
 <tr><th colspan="2">📶 최초 WiFi 설정 & 원격 접속</th></tr>
-<tr><td>1</td><td>첫 부팅(또는 WiFi 실패 1분 후) ESP가 <b>bc250-front-setup</b> AP를 엶 (비밀번호 없음)</td></tr>
+<tr><td>1</td><td>첫 부팅(또는 WiFi 실패 1분 후) ESP가 <b>bc250-front-setup</b> AP를 엶 — <b>비밀번호는 <span class="mono">secrets.yaml</span>의 <span class="mono">ap_password</span></b> (2026-09-01부터 잠금. 예전엔 누구나 붙어 WiFi를 바꿀 수 있었음)</td></tr>
 <tr><td>2</td><td>폰으로 접속 → 자동으로 설정 페이지 열림 (안 열리면 브라우저에서 <span class="mono">192.168.4.1</span>)</td></tr>
 <tr><td>3</td><td>집 WiFi 선택 + 비밀번호 입력 → 저장 후 자동 접속</td></tr>
-<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능. <b>로그인: admin / <span class="mono">secrets.yaml</span>의 web_password</b>. 페이지 JS를 펌웨어에 내장해서(<span class="mono">local: true</span>) 인터넷 없는 AP 모드(<span class="mono">192.168.4.1</span>)에서도 정상 표시</td></tr>
+<tr><td>4</td><td>이후 웹 대시보드: <span class="mono">http://bc250-front.local</span> — 전원·정상종료·팬·설정 전부 브라우저에서 조작 가능. <b>로그인: admin / <span class="mono">secrets.yaml</span>의 web_password</b> (2026-09-01부터 digest 인증 — 브라우저 로그인창은 같고, 비밀번호가 LAN에 평문으로 안 흐름. 스크립트로 부를 땐 <span class="mono">curl --digest -u admin:…</span>). 페이지 JS를 펌웨어에 내장해서(<span class="mono">local: true</span>) 인터넷 없는 AP 모드(<span class="mono">192.168.4.1</span>)에서도 정상 표시</td></tr>
 <tr><td>5</td><td>Home Assistant가 있으면 몇 분 안에 자동 발견 (없어도 모든 기능 동작). 추가할 때 <b><span class="mono">secrets.yaml</span>의 api_key</b>를 물어봄</td></tr>
 <tr><td>6</td><td><b>비밀번호 파일</b> — 키·비밀번호(API 키, OTA 비밀번호, 웹 로그인)는 전부 <span class="mono">secrets.yaml</span>에 있고 git에는 올라가지 않는다(<span class="mono">secrets.yaml.example</span> 참고). 파일을 잃어버리면 새로 만들고 USB로 다시 플래시하면 됨. 2026-08-31 적용</td></tr>
 </table>
@@ -743,11 +761,12 @@
 <tr><td>초기화 직후</td><td>메뉴에 저장된 밝기로 백라이트 ON — 화면이 "백지 → 정상"이 아니라 "꺼짐 → 정상"으로 켜진다. <b>전원 투입 후 약 1.5초 꺼져 있는 건 정상</b></td></tr>
 </table>
 <br>
+<b>2026-09-01 추가 — 2차 방어선</b>: 부팅 <b>10초·30초 뒤</b>에 LCD 소프트 복구(10장)를 한 번씩 더 돌린다. LCD 초기화(부팅 1.5초) 직후에 WiFi가 켜지며 전류가 튀어 LCD가 흔들렸더라도 늦어도 30초 안에 화면이 살아난다. 그 뒤로도 1분마다 반복.<br><br>
 <b>확인 순서</b> — 배선은 바꿀 것 없음
 <table>
 <tr><th style="width:40px">#</th><th style="width:330px">할 것</th><th>결과 → 뜻</th></tr>
 <tr><td>1</td><td><b>USB 케이블을 PC에서 완전히 뺀다.</b> 5VSB(또는 USB 충전기)만으로 전원 투입</td><td>2초 안에 화면 뜸 → 해결. 안 뜨면 2번으로</td></tr>
-<tr><td>2</td><td>그 상태로 5초 뒤 상태 LED 색, 폰 WiFi 목록에 <span class="mono">bc250-front-setup</span>(AP 모드일 때) 또는 공유기 접속 여부</td><td>LED 켜짐/AP 보임 → ESP는 부팅됨, LCD만 실패(②) → yaml <span class="mono">on_boot</span>의 <span class="mono">delay(1000)</span>을 3000으로 올리고 LCD VCC↔GND에 100 µF 전해 콘덴서<br>LED도 꺼짐·AP도 없음 → ESP 자체가 안 뜸 → 3번</td></tr>
+<tr><td>2</td><td>그 상태로 5초 뒤 상태 LED 색, 폰 WiFi 목록에 <span class="mono">bc250-front-setup</span>(AP 모드일 때) 또는 공유기 접속 여부</td><td>LED 켜짐/AP 보임 → ESP는 부팅됨, LCD만 실패(②) → <b>30초 더 기다려 본다</b>(자동 복구). 그래도 안 되면 yaml <span class="mono">on_boot</span>의 <span class="mono">delay(1000)</span>을 3000으로 올리고 LCD VCC↔GND에 100 µF 전해 콘덴서 + 10장 배선 점검<br>LED도 꺼짐·AP도 없음 → ESP 자체가 안 뜸 → 3번</td></tr>
 <tr><td>3</td><td>ESP32 보드의 <b>어느 버튼</b>으로 살아나는지 확인 (실크 <span class="mono">RST</span>/<span class="mono">EN</span> vs <span class="mono">BOOT</span>)</td><td>RST로 살아남 → 전원 상승이 느려 EN 타이밍 어긋남: DevKit <span class="mono">EN</span>↔<span class="mono">GND</span>에 1 µF, 5V↔GND에 470 µF 전해 콘덴서<br>BOOT로 살아남 → GPIO0 배선/보드 이상(정상 보드는 BOOT가 동작 중 아무 영향 없음) — GPIO0에 뭔가 닿아 있는지 확인</td></tr>
 <tr><td>4</td><td>PC에 꽂아 두고 써야 하면</td><td>①을 감수해야 함. 포트를 여는 프로그램(esphome logs, 시리얼 모니터)이 리셋을 걸 수 있으니, 화면이 죽어 있으면 <span class="mono">RST</span> 한 번</td></tr>
 </table>
@@ -821,15 +840,96 @@
 
 <table style="margin-top:12px">
 <tr><th style="width:230px">증상</th><th>원인</th><th>조치</th></tr>
-<tr><td>팬이 아예 안 돔</td><td>12V(2번) 안 옴 / 파워 꺼짐 / GND 안 이어짐</td><td>서버 전원 ON 상태에서 2번 자리에 <b>약 12V</b> 나오는지, GND가 ESP와 공통인지 확인</td></tr>
-<tr><td>팬은 도는데 <b>RPM 0</b></td><td>TACH(3번)가 GPIO11에 안 감</td><td>3번↔GPIO11 통전 확인. 3핀 팬이 아닌지도 확인</td></tr>
+<tr><td>팬이 아예 안 돔</td><td>12V(2번) 안 옴 / 파워 꺼짐 / GND 안 이어짐</td><td>서버 전원 ON 상태에서 2번 자리에 <b>약 12V</b> 나오는지, GND가 ESP와 공통인지 확인. <b>서버가 꺼져 있으면 12V가 없어 원래 안 돈다</b> — 그때 화면은 <span class="mono">FAN OFF / NO 12V - PSU OFF</span>, 웹의 "쿨링팬"도 OFF·"팬 속도" 0 (2026-09-01부터. 예전엔 PWM 명령값 20%가 그대로 보여 도는 것처럼 보였음)</td></tr>
+<tr><td>팬은 도는데 <b>RPM 0</b></td><td>TACH(3번)가 GPIO11에 안 감</td><td>3번↔GPIO11 통전 확인. 3핀 팬이 아닌지도 확인. 서버 켜짐 + PWM 20% 초과 + RPM 0이 30초 이상이면 <b>팬 이상</b>(화면 RPM 빨강, LED 빨강)</td></tr>
 <tr><td>속도 조절이 안 되고 <b>항상 풀속</b></td><td>PWM(4번) 미연결 / 3핀 팬 / GND 끊김</td><td>4번↔GPIO10 확인, GND 공유 확인. 3핀 팬은 원래 조절 불가</td></tr>
 <tr><td>웹·화면에서 팬 % 는 오르는데 소리 변화 없음</td><td>드물게 오픈드레인만 받는 팬</td><td>GPIO10↔4번 사이에 10k 풀업(→팬 쪽 5V)이 필요한 경우가 있음 — 대부분은 불필요</td></tr>
 </table>
 <div class="legend">속도 규칙은 <b>5장 설정 메뉴</b>에서: 자동(온도 커브)·수동·프리셋(조용히/표준/성능). GPU 온도가 안 읽히면 안전하게 60% 고정, 과열 경고 온도 이상이면 100%.</div>
 </div>
 
-<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21 작성 · 2026-08-31 갱신 (버튼 C · 3초 강제종료 · 콜드부팅 대기 · 화면전환 버튼 · 웹내장 · 보안 · 과열 자동종료 · 백라이트 자동어둡게 · 초기화 · 팬 연결)</footer>
+<h2>10. 화면이 깨질 때 (버튼 조작 중 등) — 자동 복구 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-09-01 조사·펌웨어 대응</span></h2>
+<div class="card">
+<b>증상</b> — 버튼을 누르거나 하면 가끔 화면이 깨진다: 색이 반전되거나, 그림이 밀리거나, 줄무늬·백지·꺼짐이 된 채 <b>계속</b> 그대로다. (한 프레임만 지지직거리고 바로 돌아오는 건 여기 해당 없음 — 그건 원래 2초 안에 지워진다)<br><br>
+<b>왜 "영구히" 깨지나</b> — ESP32는 화면 전체(240×320)를 2초마다 SPI로 다시 보내므로 <b>픽셀 데이터</b>가 잘못 가면 다음 프레임에 지워진다. 그런데 프레임마다 앞에 붙는 <b>명령 바이트</b>(주소 설정·메모리 쓰기) 하나가 노이즈로 다른 명령으로 읽히면 — 예를 들어 <span class="mono">0x2C</span>(메모리 쓰기)가 한 비트 바뀌어 <span class="mono">0x28</span>(표시 OFF)이나 <span class="mono">0x20</span>(색 반전 해제), <span class="mono">0x3A</span>(픽셀 포맷)가 되면 — LCD 컨트롤러의 <b>설정 레지스터</b>가 바뀌어 버려 그 뒤 프레임을 아무리 보내도 화면은 깨진 채 남는다. RST 선이 순간 흔들려 LCD만 리셋돼도 마찬가지(절전 상태로 돌아가 백지). 2026-08-31까지의 펌웨어는 부팅 때 딱 한 번만 초기화해서, 이렇게 되면 컨트롤러를 재부팅해야 했다.<br><br>
+<b>펌웨어 대응 (yaml <span class="mono">script: lcd_heal / lcd_reset</span>)</b>
+<table>
+<tr><th style="width:200px">언제</th><th>무엇을</th><th style="width:220px">보이는 변화</th></tr>
+<tr><td>버튼 조작 <b>1초 뒤</b><br>(연타는 마지막 조작 기준 한 번)</td><td rowspan="3"><b>소프트 복구</b> — 깨지면 영구히 남는 레지스터들만 드라이버 초기값으로 다시 쓴다: 절전 해제(SLPOUT)·아이들 모드 해제·일반 표시 모드·주소 방향+BGR(MADCTL)·16비트 픽셀 포맷(COLMOD)·색 반전(INVON)·표시 ON(DISPON). 그리고 프레임을 한 번 다시 그린다</td><td rowspan="3">정상 화면이면 <b>아무 변화 없음</b>. 깨져 있었으면 바로 정상으로</td></tr>
+<tr><td><b>1분마다</b></td></tr>
+<tr><td>부팅 <b>10초·30초 뒤</b></td></tr>
+<tr><td>메뉴 <b>화면 복구</b> / 웹·HA <b>LCD 화면 복구</b> 버튼</td><td><b>하드 복구</b> — 백라이트 끄고 → RST 핀으로 LCD 완전 리셋 → 부팅 때와 똑같은 초기화 시퀀스 전체 → 프레임 → 표시 ON → 백라이트. 소프트 복구로도 안 돌아올 때(컨트롤러 먹통)</td><td>약 0.4초 꺼졌다 켜짐</td></tr>
+</table>
+<div class="legend">같이 바뀐 것: 화면 갱신 주기 1초 → 2초. 한 프레임(153 KB) 그리고 보내는 동안 <b>약 305 ms</b>(2026-09-07 실측; 설계 때 예상은 140 ms였음) 메인 루프가 멈추는데(로그 <span class="mono">display took a long time</span>), 이게 버튼 반응을 늦추고 짧게 누른 걸 길게 잡히게 했다. 값들은 어차피 5초마다 바뀌고 버튼·전원 조작은 즉시 갱신되므로 체감 차이는 없다.</div>
+<br>
+<b>근본 원인은 배선 쪽 — 펌웨어는 "깨져도 1초 안에 돌아오게" 하는 것</b>. 깨지는 빈도 자체를 줄이려면 아래를 본다. 버튼을 누를 때 깨진다는 건 <b>버튼 선의 노이즈나 손이 닿을 때의 접촉 불량이 LCD 선(특히 RST·DC·CS)으로 넘어간다</b>는 뜻이다.
+<table>
+<tr><th style="width:40px">#</th><th style="width:300px">할 것</th><th>이유</th></tr>
+<tr><td>1</td><td><b>버튼 선과 LCD 선을 같이 묶지 말 것</b> — 따로 떼서 다른 길로</td><td>버튼을 누르는 순간 3.3 V → 0 V로 급히 떨어지는 신호가 옆 선에 유도된다. 특히 RST(GPIO16)에 튀면 LCD가 리셋돼 백지</td></tr>
+<tr><td>2</td><td>LCD 모듈 <b>VCC↔GND에 100 nF + 10 µF</b>, DevKit <b>5V↔GND에 470 µF</b> 전해 콘덴서 (핀 바로 옆에)</td><td>WiFi 송신 순간(≈300 mA) 3.3 V가 출렁이면 LCD가 먼저 죽는다. 부팅 로그에 <span class="mono">4-Way Handshake Timeout</span>이 반복되면 전원 불안정 의심</td></tr>
+<tr><td>3</td><td>LCD 선 8가닥은 <b>15 cm 이하</b>, 브레드보드 대신 납땜·핀헤더 직결. GND는 LCD·버튼·ESP 각각 <b>짧게 별도로</b></td><td>긴 점퍼선 + 브레드보드 접촉 = 흔들면 순간 끊김. 버튼을 누르는 손이 보드를 흔든다</td></tr>
+<tr><td>4</td><td>그래도 잦으면 yaml <span class="mono">substitutions: lcd_data_rate: "10MHz"</span></td><td>SPI 클럭을 반으로 → 신호 여유 2배. 대신 한 프레임 쓰는 시간이 2배(약 260 ms)라 메뉴가 조금 굼떠진다. 20 MHz는 보통 점퍼선으로도 되므로 마지막 수단</td></tr>
+<tr><td>5</td><td>RST 선(GPIO16↔LCD RST)에 <b>10 kΩ 풀업(3.3 V)</b> — 선택</td><td>부팅 직후 1.5초 동안 ESP 핀이 떠 있을 때와 노이즈에 RST가 흔들리는 걸 막는다</td></tr>
+</table>
+<br>
+<b>확인 순서</b>
+<table>
+<tr><th style="width:40px">#</th><th style="width:330px">할 것</th><th>결과 → 뜻</th></tr>
+<tr><td>1</td><td>깨진 화면을 <b>아무 버튼이나 한 번</b> 누르고 1~2초 기다림</td><td>돌아옴 → 소프트 복구 동작 중(정상). 배선만 1~3번대로 손보면 빈도가 준다</td></tr>
+<tr><td>2</td><td>안 돌아오면 <b>1분</b> 기다림</td><td>돌아옴 → 같음. 안 돌아오면 3번</td></tr>
+<tr><td>3</td><td>메뉴 B → <b>화면 복구</b> (화면이 안 보이면 웹 <span class="mono">http://bc250-front.local</span> → "LCD 화면 복구")</td><td>돌아옴 → LCD가 먹통이 될 만큼 흔들렸던 것: RST 선·전원(2·5번) 먼저. 안 돌아옴 → LCD 전원·배선 끊김(0장 연결표 재확인) 또는 모듈 고장</td></tr>
+<tr><td>4</td><td>USB(CH343)로 로그를 보며 재현: <span class="mono">esphome logs bc250-front-st7789.yaml --device /dev/cu.usbmodem5C630586901</span></td><td>깨질 때 <span class="mono">Transmit failed</span>가 찍히면 SPI 버스 자체 문제(3·4번). 아무 로그 없이 깨지면 LCD 쪽 선/전원(1·2·5번)</td></tr>
+</table>
+</div>
+
+<h2>11. BC250 쪽 종료 에이전트 설치 (정상 종료가 되려면 필수) <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-09-01 추가 · 저장소 <span class="mono">bc250-agent/</span></span></h2>
+<div class="card">
+<b>왜 필요한가</b> — 컨트롤러는 OS에게 "꺼져 달라"고 말할 방법이 HTTP뿐이다. BC250 리눅스 안에서 그 요청을 받아 <span class="mono">systemctl poweroff</span>를 실행해 주는 작은 서버가 <b>에이전트</b>. 이게 없으면 정상 종료·과열 자동 종료가 전부 실패로 떨어져 <b>전원 유지 + 빨강</b>이 되고, 끄는 방법은 강제 컷(3초)뿐이다. 표준 라이브러리만 쓰는 Python 3 한 파일이라 어느 배포판이든 된다(systemd 필요). Windows는 미지원.
+<table style="margin-top:10px">
+<tr><th style="width:40px">#</th><th style="width:330px">할 것 (BC250 에서, root)</th><th>설명</th></tr>
+<tr><td>1</td><td>저장소의 <span class="mono">bc250-agent/</span> 폴더를 BC250 으로 복사</td><td>scp, USB, git clone 아무거나</td></tr>
+<tr><td>2</td><td><span class="mono">sudo ./install.sh &lt;토큰&gt;</span></td><td>토큰 = 컨트롤러 <span class="mono">secrets.yaml</span>의 <span class="mono">bc250_agent_token</span> 값 그대로. 스크립트가 <span class="mono">/usr/local/bin/bc250_agent.py</span>, <span class="mono">/etc/bc250-agent.env</span>(600), systemd 유닛을 깔고 켠 뒤 ufw/firewalld 가 있으면 8420 을 연다. 마지막에 <span class="mono">/health → ok</span> 자체 확인</td></tr>
+<tr><td>3</td><td>공유기에서 BC250 에 <b>고정 IP(DHCP 예약)</b></td><td>IP 가 바뀌면 컨트롤러가 못 찾는다. 컨트롤러와 <b>같은 서브넷</b>이어야 함(컨트롤러는 192.168.1.x 였음)</td></tr>
+<tr><td>4</td><td>yaml <span class="mono">substitutions: bc250_host: "그 IP"</span> 로 바꾸고 다시 플래시</td><td>포트를 바꿨으면 <span class="mono">bc250_agent_port</span> 도. 기본 8420</td></tr>
+<tr><td>5</td><td>확인: 다른 PC에서 <span class="mono">curl http://BC250IP:8420/health</span></td><td><span class="mono">ok</span> 가 오면 끝. 실제 종료 테스트는 컨트롤러의 전원 버튼 짧게(또는 웹 "정상 종료") — 화면에 <span class="mono">SHUTTING DOWN</span> 카운트다운이 뜨면 성공</td></tr>
+</table>
+<table style="margin-top:12px">
+<tr><th style="width:230px">엔드포인트</th><th>동작</th></tr>
+<tr><td class="mono">GET /health</td><td><span class="mono">200 ok</span> — 토큰 없이 됨. 컨트롤러가 종료 대기 끝에 "아직 살아 있나" 확인하는 용도</td></tr>
+<tr><td class="mono">POST /shutdown</td><td>헤더 <span class="mono">X-Token</span> 이 토큰과 같으면 <span class="mono">200</span> 응답 후 1초 뒤 <span class="mono">systemctl poweroff</span>. 다르면 <span class="mono">403</span>(컨트롤러 로그에 "토큰 불일치")</td></tr>
+<tr><td class="mono">POST /reboot</td><td>같은 방식으로 <span class="mono">systemctl reboot</span> (컨트롤러는 안 씀, 수동용)</td></tr>
+</table>
+<div class="legend"><b>보안</b>: 토큰이 없으면 LAN 의 아무나 서버를 끌 수 있으므로 토큰은 필수이며, 에이전트는 토큰이 비어 있으면 모든 종료 요청을 거부한다. HTTP 평문이라 같은 LAN 안에서만 쓸 것(인터넷 노출 금지). 토큰을 바꾸면 <span class="mono">/etc/bc250-agent.env</span> 와 컨트롤러 <span class="mono">secrets.yaml</span> 양쪽을 같이 바꾸고 <span class="mono">systemctl restart bc250-agent</span> + 컨트롤러 재플래시.</div>
+<table style="margin-top:12px">
+<tr><th style="width:230px">증상 (컨트롤러 쪽)</th><th>원인</th><th>조치</th></tr>
+<tr><td>하단 <span class="mono">SHUTDOWN REQUEST FAILED</span>, 로그 "연결 실패"</td><td>IP 틀림 / 에이전트 안 뜸 / 방화벽 / 다른 서브넷</td><td>BC250 에서 <span class="mono">systemctl status bc250-agent</span>, 다른 PC 에서 <span class="mono">curl http://BC250IP:8420/health</span></td></tr>
+<tr><td>로그 "HTTP 403 (토큰 불일치)"</td><td>양쪽 토큰이 다름</td><td><span class="mono">/etc/bc250-agent.env</span> 와 <span class="mono">secrets.yaml</span> 비교</td></tr>
+<tr><td>카운트다운은 도는데 OS 가 안 꺼짐 → "한 번 더 기다림"</td><td>OS 종료가 대기 시간보다 오래 걸림</td><td>메뉴 <span class="mono">종료 대기 s</span> 를 늘림 (기본 60, 최대 180). 두 번째 대기까지 지나면 강제로 끊긴다</td></tr>
+</table>
+</div>
+
+<h2>12. 기판이 뜨끈할 때 · 어느 ESPHome 으로 올려야 하나 <span style="font-size:.85rem;color:#5a6577;font-weight:400">2026-09-07 조사·추가</span></h2>
+<div class="card">
+<b>기판이 뜨끈뜨끈한 건 정상인가</b> — 대개 정상. ESP32-S3 DevKit 은 WiFi 절전을 끄고(<span class="mono">power_save_mode: none</span>) 240 MHz 로 상시 돌며, 기판의 5 V→3.3 V 레귤레이터(AMS1117)가 그 전류를 열로 버린다. 표면 40~55 °C, 즉 "따뜻~뜨끈"이 보통이다. 2026-09-07 부터 웹/HA 의 <b>"컨트롤러 칩 온도"</b> 센서로 칩 내부 온도를 볼 수 있다.
+<table>
+<tr><th style="width:230px">어디가 뜨거운가</th><th>판단</th></tr>
+<tr><td>ESP32 모듈(은색 캔) · 그 옆 레귤레이터</td><td>정상. 칩 온도 45~65 °C 면 문제 없음. <b>80 °C 넘거나</b> 손가락을 3초 못 댈 정도·탄내가 나면 통풍과 5 V 전원(어댑터 전압·케이블)을 확인</td></tr>
+<tr><td>릴레이 모듈</td><td>서버 <b>꺼짐</b> 상태에선 코일이 계속 켜져 있어(NC 접점 방식) 미지근~따뜻한 게 정상(약 0.4 W). 서버 켜짐인데 뜨겁다면 <span class="mono">relay_inverted</span> 가 반대로 잡힌 것</td></tr>
+<tr><td>LCD 뒷면</td><td>백라이트 열. 설정 메뉴 <span class="mono">화면 밝기</span> 를 낮추면 준다</td></tr>
+<tr><td>저항·점퍼선·커넥터</td><td>비정상. 배선을 끊고 4장 연결표와 대조</td></tr>
+</table>
+<div class="legend">펌웨어 쪽 "과부하"(로그의 <span class="mono">display took a long time</span>, 센서 튐)는 발열과 거의 무관하다 — ESP-IDF 는 루프가 한가해도 CPU 를 재우지 않아 전력 차이가 미미하다.</div>
+<br>
+<b>어느 ESPHome 으로 올려야 하나</b> — 2026-09-07 점검 때 보드에는 <b>HA 쪽 ESPHome 애드온(2025.2.2)</b> 으로 빌드한 <b>8/31 커밋본</b>이 올라가 있었다. 그 결과 화면이 1초마다 갱신돼 루프의 30 % 가 막히고, GPIO5(PWR_OK)가 옛 디지털 입력이라 선이 떠서 <b>분당 70회</b> ON/OFF 로 튀며 로그·HA 를 밀어냈고, API 키·OTA 비밀번호·웹 비밀번호가 이 저장소의 <span class="mono">secrets.yaml</span> 과 달라 이 맥에서 붙을 수 없었다.
+<table>
+<tr><th style="width:230px">규칙</th><th>이유</th></tr>
+<tr><td>이 저장소의 <span class="mono">bc250-front-st7789.yaml</span> + <span class="mono">secrets.yaml</span> 을 <b>ESPHome 2026.8 이상</b>으로 빌드해 올린다</td><td>yaml 이 2026.8 문법(<span class="mono">request_headers</span>, digest 인증)을 쓴다. 2025.x 애드온에서는 아예 빌드가 안 되거나, 옛 커밋본이 올라간다</td></tr>
+<tr><td>USB 로 올릴 때: <span class="mono">esphome upload bc250-front-st7789.yaml --device /dev/cu.usbmodem5C630586901</span> (CH343 포트)</td><td>다른 secrets 로 빌드된 펌웨어가 올라가 있으면 OTA 비밀번호가 안 맞아 WiFi(OTA)로는 못 올린다. 네이티브 USB 포트는 쓰지 말 것(8장)</td></tr>
+<tr><td>지금 뭐가 올라가 있는지 보는 법</td><td>부팅 로그 첫 줄 <span class="mono">ESPHome version …</span> / 컴파일 시각, 또는 mDNS <span class="mono">_esphomelib._tcp</span> TXT 의 <span class="mono">version</span>. 증상으로는: <span class="mono">display took a long time</span> 경고가 <b>1초마다</b> 찍히면 옛 펌웨어(새 펌웨어는 2초마다)</td></tr>
+</table>
+</div>
+
+<footer>BC250 Front Controller · ESPHome bc250-front-st7789.yaml 기준 (ST7789V 240×320 SPI) · 2026-08-21 작성 · 2026-09-07 갱신 (칩 온도 센서 · 12장 발열/플래시 출처) · 2026-08-31 갱신 (버튼 C · 3초 강제종료 · 콜드부팅 대기 · 화면전환 버튼 · 웹내장 · 보안 · 과열 자동종료 · 백라이트 자동어둡게 · 초기화 · 팬 연결) · 2026-09-01 갱신 (화면 깨짐 자동 복구 · 화면 복구 버튼 · 전원 투입 자동 부팅 · 갱신 2초 · 종료 실패/PSU 이상 표시 · 카운트다운 · BC250 종료 에이전트 · AP 비밀번호 · digest 인증)</footer>
 </div>
 </body>
 </html>
