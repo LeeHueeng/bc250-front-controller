@@ -107,7 +107,7 @@ substitutions:
   # PCBA 보드(hardware/bc250-front-pcba, 네이티브 USB-C)는 USB_SERIAL_JTAG
   log_uart: UART0
   # 백라이트 자동 어둡게 — 아래 interval 의 백라이트 람다에서 사용
-  off_brightness: "10"      # 서버 꺼져 있을 때 밝기 %
+  off_brightness: "35"      # 서버 꺼져 있을 때 밝기 % (2026-09-07 10→35: 10% 는 밝은 방에서 꺼진 것처럼 보임)
   night_start: "23"         # 밤 시작 시(時) — 이 시각 이후
   night_end: "7"            # 밤 끝 시(時) — 이 시각 전까지
   night_brightness: "30"    # 밤 밝기 %
