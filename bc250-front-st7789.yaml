@@ -89,6 +89,7 @@
 #  · 전체 점검(리뷰) 반영: "화면 밝기"→"LCD 밝기"(한글만인 이름은 저장 키가 "팬 프리셋"과 겹쳐 밝기 0 복원 위험), 밝기 복원값
 #    방어(10~100 아니면 80), safe_mode id/num_attempts 20 + 자동 재부팅 전 카운터 정리, 수동 팬 0%=OFF, LED 바뀔 때만 전송,
 #    RPM nan 표시·카운트다운 millis 랩 수정, server_was_off 를 릴레이 상태에서 1초마다 미러, preferences flash_write_interval 5s.
+#  · USB 재연결 테스트에서 2차 부팅 직후(WiFi 접속 시점) BROWNOUT_RST 2회 실측 → wifi output_power 15dB. 전원은 가이드 12장 참고.
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -234,6 +235,8 @@ web_server:
 wifi:
   reboot_timeout: 0s   # WiFi 끊겨도 재부팅 금지 — 로컬 제어는 계속 동작
   power_save_mode: none   # 상시 전원이라 절전 불필요 — 웹/HA 응답 지연 방지
+  output_power: 15dB      # 2026-09-07: 기본 20dBm → 15dBm. USB 재연결 직후 WiFi 접속 순간 브라운아웃 리셋(3.3V < 2.5V)이 실측됨.
+                          # 신호가 -46dBm 로 충분히 강해 5dB 낮춰도 문제 없고, 송신 피크 전류가 ~100mA 줄어 약한 USB 전원에서 여유가 생김
   ap:
     ssid: "bc250-front-setup"
     password: !secret ap_password   # 2026-09-01: 설정용 AP 도 잠금 — 없으면 누구나 붙어서 캡티브 포털로 WiFi 를 바꿀 수 있음

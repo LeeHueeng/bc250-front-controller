@@ -928,6 +928,9 @@
 </table>
 <div class="legend">펌웨어 쪽 "과부하"(로그의 <span class="mono">display took a long time</span>, 센서 튐)는 발열과 거의 무관하다 — ESP-IDF 는 루프가 한가해도 CPU 를 재우지 않아 전력 차이가 미미하다.</div>
 <br>
+<b>전원이 약할 때 — 브라운아웃 리셋</b> — 2026-09-07 맥 USB 포트로 전원을 주고 USB 를 뺐다 꽂는 테스트에서, 부팅 직후 WiFi 가 붙는 순간 <span class="mono">rst:0xf (BROWNOUT_RST)</span> 가 두 번 찍혔다(3.3 V 가 2.5 V 아래로 순간 강하). 증상은 "켜지자마자 한두 번 더 재부팅"이며, 펌웨어는 이 경우에도 릴레이 상태를 유지하고 LCD 를 다시 살리므로 동작엔 지장이 없지만 전원이 약하다는 신호다. 펌웨어는 WiFi 송신 출력을 15 dBm 으로 낮춰(신호 -46 dBm 로 충분) 피크 전류를 줄였다. 하드웨어 쪽: <b>짧고 굵은 USB 케이블</b>, 허브 대신 본체 포트, 최종 설치에선 PSU 5VSB(2 A 이상)로 급전. 부팅 로그 첫 줄의 <span class="mono">rst:</span> 값으로 확인한다(0x1 POWERON 정상, 0xf 브라운아웃).
+
+<br>
 <b>어느 ESPHome 으로 올려야 하나</b> — 2026-09-07 점검 때 보드에는 <b>HA 쪽 ESPHome 애드온(2025.2.2)</b> 으로 빌드한 <b>8/31 커밋본</b>이 올라가 있었다. 그 결과 화면이 1초마다 갱신돼 루프의 30 % 가 막히고, GPIO5(PWR_OK)가 옛 디지털 입력이라 선이 떠서 <b>분당 70회</b> ON/OFF 로 튀며 로그·HA 를 밀어냈고, API 키·OTA 비밀번호·웹 비밀번호가 이 저장소의 <span class="mono">secrets.yaml</span> 과 달라 이 맥에서 붙을 수 없었다.
 <table>
 <tr><th style="width:230px">규칙</th><th>이유</th></tr>
