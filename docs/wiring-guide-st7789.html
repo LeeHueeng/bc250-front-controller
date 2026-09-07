@@ -876,7 +876,7 @@
 <tr><td>1</td><td><b>버튼 선과 LCD 선을 같이 묶지 말 것</b> — 따로 떼서 다른 길로</td><td>버튼을 누르는 순간 3.3 V → 0 V로 급히 떨어지는 신호가 옆 선에 유도된다. 특히 RST(GPIO16)에 튀면 LCD가 리셋돼 백지</td></tr>
 <tr><td>2</td><td>LCD 모듈 <b>VCC↔GND에 100 nF + 10 µF</b>, DevKit <b>5V↔GND에 470 µF</b> 전해 콘덴서 (핀 바로 옆에)</td><td>WiFi 송신 순간(≈300 mA) 3.3 V가 출렁이면 LCD가 먼저 죽는다. 부팅 로그에 <span class="mono">4-Way Handshake Timeout</span>이 반복되면 전원 불안정 의심</td></tr>
 <tr><td>3</td><td>LCD 선 8가닥은 <b>15 cm 이하</b>, 브레드보드 대신 납땜·핀헤더 직결. GND는 LCD·버튼·ESP 각각 <b>짧게 별도로</b></td><td>긴 점퍼선 + 브레드보드 접촉 = 흔들면 순간 끊김. 버튼을 누르는 손이 보드를 흔든다</td></tr>
-<tr><td>4</td><td>그래도 잦으면 yaml <span class="mono">substitutions: lcd_data_rate: "10MHz"</span></td><td>SPI 클럭을 반으로 → 신호 여유 2배. 대신 한 프레임 쓰는 시간이 2배(약 260 ms)라 메뉴가 조금 굼떠진다. 20 MHz는 보통 점퍼선으로도 되므로 마지막 수단</td></tr>
+<tr><td>4</td><td>SPI 클럭은 2026-09-07부터 기본 <span class="mono">lcd_data_rate: "10MHz"</span> (예전 20 MHz)</td><td>동작 중 화면이 검게 꺼지는 일(명령 바이트 1비트 오류 → DISPOFF)이 있어 반으로 낮췄다. 한 프레임 쓰는 시간 약 140 → 200 ms(2초마다). 같은 날부터 펌웨어가 <b>2초마다 DISPON·NORON·INVON·IDMOFF 명령을 다시 보내</b> 깨져도 2초 안에 스스로 돌아온다(예전엔 60초 복구까지 검은 채). 그래도 자주 깨지면 점퍼를 짧게(10 cm 이하)·GND 를 LCD 바로 옆 핀에</td></tr>
 <tr><td>5</td><td>RST 선(GPIO16↔LCD RST)에 <b>10 kΩ 풀업(3.3 V)</b> — 선택</td><td>부팅 직후 1.5초 동안 ESP 핀이 떠 있을 때와 노이즈에 RST가 흔들리는 걸 막는다</td></tr>
 </table>
 <br>

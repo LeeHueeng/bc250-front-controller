@@ -84,6 +84,8 @@
 #  · 콜드 부팅(USB/5V 투입) 첫 부팅에선 LCD 가 안 나오고 RST 로만 살아나는 현상(하드 복구·BOOT 버튼 무효, 소프트 재부팅은 유효)
 #    → on_boot 900 에서 POWERON 이면 esp_restart() 1회 (bc250_boot.h 의 RTC 플래그로 2차 부팅도 콜드 취급 → 서버 ON 정책 유지).
 #  · 팬 PWM(25kHz)·백라이트 PWM(5kHz)이 LEDC 타이머 0 을 공유해 팬이 5kHz 로 돌던 버그 → 백라이트를 채널 2(타이머 1)로.
+#  · 동작 중 화면이 검게 꺼짐(명령 바이트 1비트 오류 → DISPOFF) → 2초마다 DISPON·NORON·INVON·IDMOFF 재전송(interval),
+#    SPI 클럭 20→10MHz. 콜드 부팅으로 서버 ON 이 되면 server_was_off 를 지움(안 지우면 다음 소프트 재부팅에 서버가 꺼짐).
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -121,7 +123,7 @@ substitutions:
   # 전원 투입(콜드 부팅) 때 서버 자동 ON — "false"면 예전처럼 마지막 전원 상태 복원(끈 채로 뽑았다 꽂으면 꺼진 채)
   power_on_boot: "true"
   # LCD SPI 클럭 — 점퍼선이 길어 화면이 계속 깨지면 10MHz 로 낮춰 볼 것 (한 프레임 쓰는 시간은 2배)
-  lcd_data_rate: "20MHz"
+  lcd_data_rate: "10MHz"    # 2026-09-07 20→10MHz: 동작 중 화면이 검게 꺼지는(명령 바이트 깨짐) 일이 있어 낮춤. 프레임 ~140→~200ms
 
 esphome:
   name: bc250-front
@@ -161,6 +163,9 @@ esphome:
               - switch.turn_on: relay
             else:
               - logger.log: {level: INFO, format: "부팅 — 서버 ON (전원 투입 자동 부팅=${power_on_boot}, 리셋 원인=%d, 콜드=%d)", args: ['(int) esp_reset_reason()', '(int) bc250_is_cold_boot()']}
+              # 2026-09-07: 콜드 부팅으로 서버가 켜졌으면 옛 "꺼짐" 플래그도 지운다 — 안 지우면 다음 OTA/재시작(소프트)에서
+              # "꺼짐 상태 복원"이 돌아 켜져 있던 서버를 끈다 (9/7 실제 발생: USB 재연결 → 서버 ON → OTA → 서버 OFF)
+              - globals.set: {id: server_was_off, value: "false"}
     - priority: 450          # 디스플레이(400)보다 먼저, 릴레이·출력·number 복원(800)보다 나중
       then:
         - lambda: |-
@@ -800,6 +805,17 @@ fan:
 interval:
   - interval: 60s           # LCD 소프트 복구 (2026-09-01) — 버튼 없이도 깨진 화면이 1분 안에 돌아오게
     then: [script.execute: lcd_heal]
+  # 표시 유지 명령 (2026-09-07): 매 프레임 앞의 명령(CASET 0x2A·RAMWR 0x2C)은 비트 하나만 깨져도 0x28=DISPOFF 가 되어
+  # 화면이 검게 남는다(9/7 동작 중 발생). 2초마다 DISPON·NORON·INVON·IDMOFF 네 바이트를 다시 보내 깨져도 2초 안에 돌아오게 한다.
+  # 데이터 없는 1바이트 명령들이라 비용은 사실상 0. (SLPIN 0x10 같은 2비트 이상 오류는 60초 lcd_heal 이 SLPOUT 로 복구)
+  - interval: 2s
+    then:
+      - lambda: |-
+          auto cmd = [](uint8_t c) { id(lcd_dc).turn_off(); id(lcd).enable(); id(lcd).write_byte(c); id(lcd).disable(); id(lcd_dc).turn_on(); };
+          cmd(0x38);   // IDMOFF  아이들(8색) 모드 해제
+          cmd(0x13);   // NORON   일반 표시 모드 (부분 표시 해제)
+          cmd(0x21);   // INVON   색 반전 (이 패널의 정상 색)
+          cmd(0x29);   // DISPON  표시 ON
   - interval: 5s
     then:
       # 백라이트: 기본은 설정 밝기. 서버 꺼짐 → ${off_brightness}%, 밤(${night_start}~${night_end}시, 시계 맞을 때만) → ${night_brightness}%.
