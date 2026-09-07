@@ -299,7 +299,7 @@
 <tr><td class="mono">팬 모드</td><td>자동(온도 커브) / 수동. 자동인데 GPU 온도가 안 읽히면(센서 미배선·고장) <b>60% 고정</b>으로 돈다</td></tr>
 <tr><td class="mono">수동 팬 %</td><td>수동 모드일 때 팬 속도 (0~100%)</td></tr>
 <tr><td class="mono">팬 프리셋</td><td>조용히(−10%p) / 표준 / 성능(+15%p) — 자동 커브에 가감</td></tr>
-<tr><td class="mono">화면 밝기</td><td>10~100% — ST7789 백라이트 PWM 밝기. <b>자동 어둡게</b>: 서버 꺼짐 → 10%, 밤 23~07시(인터넷 시계가 맞을 때만) → 30%, 아무 버튼이나 누르면 30초간 원래 밝기 (값은 yaml <span class="mono">off_brightness / night_start / night_end / night_brightness</span>)</td></tr>
+<tr><td class="mono">화면 밝기</td><td>10~100% — ST7789 백라이트 PWM 밝기 (웹/HA 에서는 <b>"LCD 밝기"</b> — 2026-09-07 이름 변경: 한글만인 이름은 저장 키가 "팬 프리셋"과 겹쳐 밝기가 0 으로 복원되던 버그). <b>자동 어둡게</b>: 서버 꺼짐 → 35%(예전 10%), 밤 23~07시(인터넷 시계가 맞을 때만) → 30%, 아무 버튼이나 누르면 30초간 원래 밝기 (값은 yaml <span class="mono">off_brightness / night_start / night_end / night_brightness</span>)</td></tr>
 <tr><td class="mono">과열 경고 C</td><td>이 온도 넘으면 팬 100% + 경고 (70~95°C, <b>5°C 단위</b>). 여기서 <b>+10°C가 60초 지속되면 자동 정상 종료</b>, 종료 요청이 실패하면 강제 전원 컷 (마진은 yaml <span class="mono">critical_margin</span>)</td></tr>
 <tr><td class="mono">종료 대기 s</td><td>정상 종료 시 OS가 꺼질 때까지 기다리는 시간 (30~180초)</td></tr>
 <tr><td class="mono">화면 복구 <span class="no">2026-09-01 추가</span></td><td>LCD를 RST 핀으로 완전히 리셋하고 초기화를 처음부터 다시 함 — 화면이 깨진 채 <b>1분이 지나도 안 돌아올 때</b>. 약 0.4초 꺼졌다 켜진다. 웹/HA에는 "LCD 화면 복구" 버튼. 평소의 깨짐은 <b>10장</b>의 자동 복구가 알아서 처리</td></tr>

@@ -86,6 +86,9 @@
 #  · 팬 PWM(25kHz)·백라이트 PWM(5kHz)이 LEDC 타이머 0 을 공유해 팬이 5kHz 로 돌던 버그 → 백라이트를 채널 2(타이머 1)로.
 #  · 동작 중 화면이 검게 꺼짐(명령 바이트 1비트 오류 → DISPOFF) → 2초마다 DISPON·NORON·INVON·IDMOFF 재전송(interval),
 #    SPI 클럭 20→10MHz. 콜드 부팅으로 서버 ON 이 되면 server_was_off 를 지움(안 지우면 다음 소프트 재부팅에 서버가 꺼짐).
+#  · 전체 점검(리뷰) 반영: "화면 밝기"→"LCD 밝기"(한글만인 이름은 저장 키가 "팬 프리셋"과 겹쳐 밝기 0 복원 위험), 밝기 복원값
+#    방어(10~100 아니면 80), safe_mode id/num_attempts 20 + 자동 재부팅 전 카운터 정리, 수동 팬 0%=OFF, LED 바뀔 때만 전송,
+#    RPM nan 표시·카운트다운 millis 랩 수정, server_was_off 를 릴레이 상태에서 1초마다 미러, preferences flash_write_interval 5s.
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -150,6 +153,8 @@ esphome:
             if (esp_reset_reason() == ESP_RST_POWERON) {
               ESP_LOGI("main", "콜드 부팅 — LCD 정상화를 위해 1회 자동 재부팅 (리셋 원인=%d)", (int) esp_reset_reason());
               bc250_cold_flag = BC250_COLD_MAGIC;
+              id(sm).clean_rtc();               // safe_mode 부팅 실패 카운터는 이미 +1 된 뒤라, 자동 재부팅이 2회로 세지 않게 0 으로 (2026-09-07 리뷰)
+              global_preferences->sync();
               delay(50);
               esp_restart();
             }
@@ -176,7 +181,13 @@ esphome:
             delay(200);                           // 데이터시트 리셋 해제 후 대기(120ms) + 여유
     - priority: 350          # 디스플레이 초기화가 끝난 직후: 저장된 밝기로 백라이트 ON
       then:
-        - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
+        - lambda: |-
+            float b = id(display_brightness).state;
+            if (isnan(b) || b < 10 || b > 100) {        // 예전 키 충돌 등으로 깨진 저장값 방어 (2026-09-07)
+              ESP_LOGW("main", "밝기 저장값 이상(%.3f) → 80%% 로", b);
+              auto c = id(display_brightness).make_call(); c.set_value(80); c.perform(); b = 80;
+            }
+            id(backlight_pwm).set_level(b / 100.0f);
     - priority: -100         # 전부 켜진 뒤(WiFi 시작 이후): 10초·30초 뒤 LCD 소프트 복구 — WiFi 기동 전류로 LCD가
       then:                  # 흔들렸어도 되살림 (콜드 부팅 때 화면 안 켜지는 증상의 2차 방어선, 2026-09-01)
         # 소프트 재부팅(OTA·재시작 버튼·안전 모드)이면 3초 뒤 LCD 하드 복구(RST 펄스 + 전체 초기화) — 2026-09-07:
@@ -187,6 +198,9 @@ esphome:
             then: [script.execute: lcd_reset_boot]
         - script.execute: lcd_heal_boot
         - lambda: 'bc250_cold_flag = 0;'   # 콜드 플래그 소비 — 이후 OTA·재시작(SW)은 소프트 재부팅으로 판정
+
+preferences:
+  flash_write_interval: 5s   # 2026-09-07 기본 60s → 5s: 바뀐 값만 쓰므로(변경 없으면 cached) 플래시 마모 없음. 재부팅 직전 변경도 남게
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -199,6 +213,9 @@ api:            # HA 직결 (자동 발견·이벤트·서비스)
   reboot_timeout: 0s
   encryption:
     key: !secret api_key          # HA에서 기기 추가할 때 입력 (secrets.yaml)
+safe_mode:            # ota 가 자동 생성하지만 id 가 필요해 명시 (on_boot 900 의 clean_rtc). 60초 안에 num_attempts 번 부팅 실패 → 5분 안전 모드
+  id: sm
+  num_attempts: 20    # 기본 10 → 20: 벤치에서 전원을 자주 껐다 켜도 안전 모드(LCD·릴레이 제어 없음)에 안 빠지게
 ota:
   platform: esphome
   password: !secret ota_password  # WiFi OTA 업로드 비밀번호 (esphome upload 가 자동으로 사용)
@@ -499,7 +516,8 @@ number:
     unit_of_measurement: "%"
   - platform: template
     id: display_brightness
-    name: "화면 밝기"
+    name: "LCD 밝기"        # 2026-09-07 "화면 밝기"→"LCD 밝기": 한글만인 이름은 내부 키가 전부 "_____" 로 같아져 "팬 프리셋"(select)과
+                            # 플래시 저장 슬롯을 공유했음 → 프리셋을 바꾸면 다음 부팅에 밝기가 0 으로 복원돼 화면이 안 켜짐. 메뉴 표기는 그대로.
     min_value: 10
     max_value: 100
     step: 10
@@ -808,6 +826,10 @@ interval:
   # 표시 유지 명령 (2026-09-07): 매 프레임 앞의 명령(CASET 0x2A·RAMWR 0x2C)은 비트 하나만 깨져도 0x28=DISPOFF 가 되어
   # 화면이 검게 남는다(9/7 동작 중 발생). 2초마다 DISPON·NORON·INVON·IDMOFF 네 바이트를 다시 보내 깨져도 2초 안에 돌아오게 한다.
   # 데이터 없는 1바이트 명령들이라 비용은 사실상 0. (SLPIN 0x10 같은 2비트 이상 오류는 60초 lcd_heal 이 SLPOUT 로 복구)
+  # 서버 꺼짐 플래그를 릴레이 실제 상태에서 미러 (2026-09-07): 어떤 경로로 전원이 바뀌든 1초 안에 따라가고 5초 안에 플래시에 남는다
+  # (9/7 실측: 서버를 켰는데 옛 플래그가 남아 OTA 뒤 "꺼짐 복원"으로 서버가 꺼짐). 부팅 때 on_boot(700)는 직전 값을 읽는다.
+  - interval: 1s
+    then: [lambda: 'id(server_was_off) = id(relay).state;']
   - interval: 2s
     then:
       - lambda: |-
@@ -848,7 +870,9 @@ interval:
           // fan_mode 옵션: 0=자동, 1=수동 (active_index는 버전 무관하게 동일 API)
           if (id(fan_mode).active_index().value_or(0) == 1) {
             int target = (int) id(manual_speed).state;
-            if (!id(the_fan).state || id(the_fan).speed != target) {   // 바뀔 때만 (HA 로 5초마다 같은 값 안 보내게, 2026-09-01)
+            if (target < 1) {                                            // 수동 0% = 팬 OFF (FanCall 은 1 미만을 1 로 올려 5초마다 재전송됐음, 2026-09-07)
+              if (id(the_fan).state) id(the_fan).turn_off().perform();
+            } else if (!id(the_fan).state || id(the_fan).speed != target) {   // 바뀔 때만 (HA 로 5초마다 같은 값 안 보내게, 2026-09-01)
               auto call = id(the_fan).turn_on(); call.set_speed(target); call.perform();
             }
             return;
@@ -879,10 +903,15 @@ interval:
           }
       # 상태 LED: 꺼짐=OFF / 종료중=노랑 / 이상(종료 실패·PSU 이상·팬 고장·과열)=빨강 / 정상=초록
       - lambda: |-
+          int code = !id(server_power).state ? 0 : id(shutting_down) ? 1
+                   : (id(shutdown_failed) || id(psu_fault).state || id(fan_error).state || id(overheat).state) ? 2 : 3;
+          static int last = -1;
+          if (code == last) return;            // 바뀔 때만 (5초마다 같은 색을 HA 로 보내지 않게, 2026-09-07 리뷰)
+          last = code;
+          if (code == 0) { id(status_led).turn_off().perform(); return; }
           auto call = id(status_led).turn_on();
-          if (!id(server_power).state) { id(status_led).turn_off().perform(); return; }
-          if (id(shutting_down)) call.set_rgb(1.0, 0.7, 0.0);
-          else if (id(shutdown_failed) || id(psu_fault).state || id(fan_error).state || id(overheat).state) call.set_rgb(1.0, 0.0, 0.0);
+          if (code == 1) call.set_rgb(1.0, 0.7, 0.0);
+          else if (code == 2) call.set_rgb(1.0, 0.0, 0.0);
           else call.set_rgb(0.0, 1.0, 0.0);
           call.set_brightness(0.4);
           call.perform();
@@ -979,7 +1008,7 @@ display:
             it.print(92, 246, id(f_14), Color(150, 150, 150), "NO 12V - PSU OFF");
           } else {
             it.printf(18, 238, id(f_28), id(fan_error).state ? Color(255, 60, 60) : Color(255, 255, 255),
-                      "%.0f RPM", (float) id(fan_rpm).state);
+                      "%.0f RPM", isnan(id(fan_rpm).state) ? 0.0f : (float) id(fan_rpm).state);
             it.printf(150, 238, id(f_28), Color(255, 255, 255), "%.0f%%", (float) id(the_fan).speed);
           }
 
@@ -990,7 +1019,7 @@ display:
               it.print(120, 296, id(f_20), Color(255, 220, 80), TextAlign::CENTER, "SENDING SHUTDOWN");
             } else {
               uint32_t now = millis();
-              uint32_t left = id(shutdown_deadline) > now ? (id(shutdown_deadline) - now + 999) / 1000 : 0;
+              uint32_t left = (int32_t)(id(shutdown_deadline) - now) > 0 ? (id(shutdown_deadline) - now + 999) / 1000 : 0;   // millis 랩 안전
               it.printf(120, 296, id(f_20), Color(255, 220, 80), TextAlign::CENTER, "SHUTTING DOWN %us", (unsigned) left);
             }
           } else if (id(shutdown_failed)) {
