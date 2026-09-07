@@ -133,6 +133,9 @@ esphome:
   name: bc250-front
   friendly_name: BC250 컨트롤러
   includes: ["<esp_system.h>", "bc250_boot.h"]   # esp_reset_reason() + 콜드 부팅 자동 재부팅 플래그(bc250_is_cold_boot, on_boot 900/700)
+  # 2026-09-07 안전장치: 이 파일은 2026.8 문법(request_headers·digest 인증 등)을 쓴다. 옛 ESPHome(HA 애드온 2025.2.2 등)에서
+  # 빌드하면 여기서 명확한 오류로 멈춘다 — 9/7 아침처럼 옛 커밋본이 다른 secrets 로 올라가 API/OTA 가 안 맞는 사고 방지.
+  min_version: "2026.8.0"
   # ── 콜드 부팅(5V 투입) 때 LCD가 안 켜지고 RST를 눌러야 나오던 문제 대응 ──
   # ESPHome st7789v 드라이버의 리셋은 1ms LOW → ~4.5ms 대기 → SLPOUT 로 데이터시트 한계(5ms)에
   # 걸쳐 있어, 전원이 막 들어와 LCD 내부 상태가 정리되지 않은 콜드 부팅에서는 초기화가 씹힐 수 있다
