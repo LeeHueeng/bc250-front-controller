@@ -79,6 +79,8 @@
 #    이 저장소의 secrets.yaml 과 ESPHome 2026.8+ 로 빌드해 올릴 것 (USB: esphome upload … --device /dev/cu.usbmodem5C630586901).
 #  · 버그 수정: "서버 전원" 템플릿 스위치가 부팅 때 저장된 OFF 를 복원(turn_off_action)하며 릴레이를 켜서, 콜드 부팅
 #    자동 ON 정책이 안 먹었음(9/1 검증 땐 저장값이 ON 이라 드러나지 않음). restore_mode: DISABLED 로 해결.
+#  · 소프트 재부팅(OTA·재시작) 뒤 화면이 안 켜지고 RST 를 눌러야 나온다는 보고 → 소프트 재부팅이면 부팅 3초 뒤
+#    lcd_reset(하드 복구)을 자동 실행(script lcd_reset_boot). 서버 꺼짐 때 백라이트 10%→35% (밝은 방에서 꺼진 듯 보임).
 #
 # ── ST7789V 모듈 핀 → ESP32-S3 (SPI 4선) ─────────────────────────────────────────
 #  모듈 핀      →  ESP32-S3      비고
@@ -156,6 +158,12 @@ esphome:
         - lambda: 'id(backlight_pwm).set_level(id(display_brightness).state / 100.0f);'
     - priority: -100         # 전부 켜진 뒤(WiFi 시작 이후): 10초·30초 뒤 LCD 소프트 복구 — WiFi 기동 전류로 LCD가
       then:                  # 흔들렸어도 되살림 (콜드 부팅 때 화면 안 켜지는 증상의 2차 방어선, 2026-09-01)
+        # 소프트 재부팅(OTA·재시작 버튼·안전 모드)이면 3초 뒤 LCD 하드 복구(RST 펄스 + 전체 초기화) — 2026-09-07:
+        # RST(콜드 부팅)에선 화면이 켜지는데 OTA 재부팅 뒤엔 안 켜진다는 보고. 소프트 재부팅은 GPIO·패널이 이전 상태를
+        # 유지한 채 재초기화되므로 드라이버 초기화가 씹힐 수 있어, 켜져 있던 것과 무관하게 한 번 더 완전히 초기화한다.
+        - if:
+            condition: {lambda: 'return esp_reset_reason() != ESP_RST_POWERON;'}
+            then: [script.execute: lcd_reset_boot]
         - script.execute: lcd_heal_boot
 
 esp32:
@@ -370,6 +378,13 @@ script:
       - delay: 1s
       - script.execute: lcd_heal
   # 부팅 10초·30초 뒤 소프트 복구 (WiFi 기동 전류 등으로 초기화 직후 LCD가 흔들린 경우)
+  # 소프트 재부팅 3초 뒤 하드 복구 (esphome.on_boot -100 참고, 2026-09-07)
+  - id: lcd_reset_boot
+    mode: single
+    then:
+      - delay: 3s
+      - logger.log: {level: INFO, format: "소프트 재부팅 — LCD 하드 복구 실행 (리셋 원인=%d)", args: ['(int) esp_reset_reason()']}
+      - script.execute: lcd_reset
   - id: lcd_heal_boot
     mode: single
     then:
